@@ -1,13 +1,9 @@
-import discord, asyncio, http.client, json, requests
-from bs4 import BeautifulSoup
-
-import members
+import discord
 import discord_token
 
 token = discord_token.discord_token
 headers = {"User-Agent":"JooDdae Bot"}
 MAX_TIMEOUT = 30
-
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -21,7 +17,12 @@ async def on_message(message):
   if commands[0] == "!막고라":
     import makgora
     await makgora.start_makgora(commands, message, client)
-    return
+  elif commands[0] == "!멤버":
+    import members
+    await members.print_member(commands, message)
+  elif commands[0] == "!등록":
+    import members
+    await members.register_member(commands, message, client)
 
 
 client.run(token)

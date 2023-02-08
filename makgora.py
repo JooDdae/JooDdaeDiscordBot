@@ -1,4 +1,4 @@
-import discord, asyncio, http.client, json, requests
+import asyncio, http.client, json, requests
 from bs4 import BeautifulSoup
 
 headers = {"User-Agent":"JooDdae Bot"}
@@ -111,6 +111,12 @@ async def start_makgora(commands, message, client):
       result1 = first_ac_submission(id1, problem['problemId'])
       result2 = first_ac_submission(id2, problem['problemId'])
       if result1 != -1 or result2 != -1:
-        await message.channel.send([id2, id1][result2 == -1 or (result1 != -1 and result1 < result2)] + "가 먼저 문제를 해결했습니다.")
+        winner = [id2, id1][result2 == -1 or (result1 != -1 and result1 < result2)]
+        loser = [id2, id1][id2 == winner]
+        await message.channel.send(winner + "가 먼저 문제를 해결했습니다.")
+
+        import members
+        await members.change_winlose(message, winner, loser)
+
         break
       await message.channel.send("둘 다 아직 풀지 않았습니다.")

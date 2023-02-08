@@ -2,4 +2,4 @@ discord_token.py
 __pycache__/
 ```
 test.py
-member_list.txt
+*.txt
