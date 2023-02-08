@@ -131,3 +131,19 @@ async def register_member(commands, message, client):
   await update_member_list()
   await message.channel.send("{mention}님이 {id}로 등록되었습니다.".format(mention=message.author.mention, id=commands[1]))
   await print_member(["!멤버", commands[1]], message)
+
+async def valid_baekjoon_id(id):
+  return id in baekjoon_id_list
+
+async def get_baekjoon_id(id):
+  for member in member_list:
+    if member[0] == str(id):
+      return member[1]
+  return ""
+
+  
+async def get_discord_id(id):
+  for member in member_list:
+    if member[1] == id:
+      return member[0]
+  return ""

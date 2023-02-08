@@ -14,9 +14,9 @@ client = discord.Client(intents=intents)
 async def on_message(message):
   commands = message.content.split(" ")
   
-  if commands[0] == "!막고라":
+  if commands[0] == "!막고라신청":
     import makgora
-    await makgora.start_makgora(commands, message, client)
+    await makgora.request_makgora(commands, message, client)
   elif commands[0] == "!멤버":
     import members
     await members.print_member(commands, message)
