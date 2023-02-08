@@ -39,11 +39,16 @@ async def request_makgora(commands, message, client):
     await message.channel.send("TODO : 어떻게 잘못되었는지 설명 추가")
     await message.channel.send("형식이 잘못되었습니다. '!막고라신청 [난이도] [상대방 아이디]' 형식으로 입력해주세요.")
     return
-  
+
   tier = commands[1]
   id2 = commands[2]
   left_minute = 10
   notification_minute = 2
+  
+  if await members.is_makgoraing(id1) == True or await members.is_makgoraing(id2) == True:
+    await message.channel.send("이미 막고라 중인 멤버가 있습니다.")
+    return
+  
 
   msg = await message.channel.send("{tier} 난이도의 문제로 {id2}에게 막고라를 신청하는게 맞습니까?".format(tier = tier, id1 = id1, id2 = id2))
   await msg.add_reaction("✅")
@@ -82,7 +87,6 @@ async def request_makgora(commands, message, client):
 
 
 async def start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, discord_id1, discord_id2):
-
   conn = http.client.HTTPSConnection("solved.ac")
   conn.request("GET", "/api/v3/search/problem?query=*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id1 + "&sort=random", headers={ 'Content-Type': "application/json" })
 
@@ -102,6 +106,9 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
   await message.channel.send(id1 + "과 " + id2 + "의 막고라가 시작됩니다.")
   await message.channel.send(problem['titleKo'] + " https://www.acmicpc.net/problem/" + str(problem['problemId']))
   await message.channel.send("문제를 풀고 나서 '!컷'을 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
+
+  import members
+  await members.makgoraing_list_add(id1, id2)
 
   def first_ac_submission(user_id, problem_id):
     URL = "https://www.acmicpc.net/status?problem_id=" + str(problem_id) + "&user_id=" + user_id + "&result_id=4"
@@ -124,6 +131,7 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
     except asyncio.TimeoutError:
       if left_second == 0 :
         await message.channel.send("제한시간이 초과되었습니다.")
+        await members.makgoraing_list_del(id1, id2)
         return
       if left_second % (60 * notification_minute) == 0 or left_second == 60:
         await msg_time.edit(content = "남은 시간 " + str(left_second//60) + "분")
@@ -135,6 +143,7 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
     else:
       if msg.content == "!취소" :
         await message.channel.send("취소되었습니다.")
+        await members.makgoraing_list_del(id1, id2)
         return
       result1 = first_ac_submission(id1, problem['problemId'])
       result2 = first_ac_submission(id2, problem['problemId'])
@@ -146,3 +155,4 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
         await members.change_winlose(message, winner, loser)
         break
       await message.channel.send("둘 다 아직 풀지 않았습니다.")
+  members.makgoraing_list_del(id1, id2)

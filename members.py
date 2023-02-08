@@ -2,6 +2,19 @@ import asyncio
 
 # discord_id, baekjoon_id, rating, win, lose
 member_list = []
+makgoraing_list = set()
+async def is_makgoraing(id):
+  if id in makgoraing_list:
+    return True
+  return False
+
+async def makgoraing_list_add(id1, id2):
+  makgoraing_list.add(id1)
+  makgoraing_list.add(id2)
+
+async def makgoraing_list_del(id1, id2):
+  makgoraing_list.remove(id1)
+  makgoraing_list.remove(id2)
 
 with open("member_list.txt", "r") as f:
   for line in f:
@@ -41,7 +54,7 @@ async def update_member_list():
 
 async def change_winlose(message, winner, loser) :
   win = baekjoon_id_list.index(winner)
-  lose = baekjoon_id_list.index(winner)
+  lose = baekjoon_id_list.index(loser)
 
   if win == -1 or lose == -1:
     await message.channel.send("해당 멤버가 존재하지 않습니다.")
@@ -53,7 +66,7 @@ async def change_winlose(message, winner, loser) :
   def change_rating(r1, r2):
     e1 = 1 / (1 + 10 ** ((r2 - r1) / 400))
     e2 = 1 / (1 + 10 ** ((r1 - r2) / 400))
-    return r1 + 32 * (1 - e1), r2 + 32 * (0 - e2)
+    return r1 + int(32 * (1 - e1)), r2 + int(32 * (0 - e2))
   r1, r2 = change_rating(r1, r2)
 
   member_list[win][2] = str(r1)
