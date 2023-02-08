@@ -86,16 +86,16 @@ async def register_member(commands, message, client):
   for i in range(50):
     print_string += str(random.randint(0, 9))
   
-  problem_number = 1008
-  await message.channel.send("[" + print_string + "]을 "+ str(problem_number) +"번 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요.")
+  # problem_number = 1008
+  msg = await message.channel.send("[" + print_string + "]을 아무 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요.")
 
 
   def check_same_author(msg):
     return message.author == msg.author
   try:
-    msg = await client.wait_for('message', timeout=60.0, check=check_same_author)
+    msg = await client.wait_for('message', timeout=300.0, check=check_same_author)
   except asyncio.TimeoutError:
-    await message.channel.send("시간이 초과되었습니다.")
+    await msg.edit(content = "시간이 초과되었습니다.")
     return
 
   URL = "https://www.acmicpc.net/source/share/" + msg.content
@@ -115,9 +115,9 @@ async def register_member(commands, message, client):
   input_string = soup.select("div.sample-source > div.form-group > div.col-md-12 > textarea")[0].text
   problem_info = soup.select("div.breadcrumbs > div.container")[0].text.split()
 
-  if problem_info[0] != str(problem_number) + "번":
-    await message.channel.send("제출한 문제가 잘못되었습니다.")
-    return
+  # if problem_info[0] != str(problem_number) + "번":
+  #   await message.channel.send("제출한 문제가 잘못되었습니다.")
+  #   return
 
   if problem_info[-1] != commands[1]:
     await message.channel.send("아이디가 일치하지 않습니다.")
@@ -141,7 +141,6 @@ async def get_baekjoon_id(id):
       return member[1]
   return ""
 
-  
 async def get_discord_id(id):
   for member in member_list:
     if member[1] == id:

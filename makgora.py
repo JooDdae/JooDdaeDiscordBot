@@ -10,6 +10,7 @@ async def request_makgora(commands, message, client):
       return
 
   def valid_tier(tier):
+    tier = tier.lower()
     if len(tier) == 1:
       return tier[0] in "bsgpdr"
     elif len(tier) == 2:
@@ -18,10 +19,14 @@ async def request_makgora(commands, message, client):
       if ".." not in tier :
         return False
       tier = tier.split("..")
-      if len(tier) == 1 :
-        return valid_tier(tier[0])
-      else :
-        return len(tier) == 2 and valid_tier(tier[0]) and valid_tier(tier[1])
+      print(tier)
+      if len(tier) == 2 :
+        if len(tier[0]) == 0 :
+          return valid_tier(tier[1])
+        elif len(tier[1]) == 0 :
+          return valid_tier(tier[0])
+        else :
+          return valid_tier(tier[0]) and valid_tier(tier[1])
     return False
   
   import members
@@ -50,11 +55,11 @@ async def request_makgora(commands, message, client):
     reaction, user = await client.wait_for('reaction_add', timeout=MAX_TIMEOUT, check=check_reaction)
   except asyncio.TimeoutError:
     await msg.clear_reactions()
-    await message.channel.send("시간이 초과되었습니다.")
+    await msg.edit(content = "시간이 초과되었습니다.")
     return
   await msg.clear_reactions()
   if str(reaction.emoji) == "❌":
-    await message.channel.send("취소되었습니다.")
+    await msg.edit(content = "취소되었습니다.")
     return
 
   discord_id2 = await members.get_discord_id(id2)
@@ -67,17 +72,17 @@ async def request_makgora(commands, message, client):
     reaction, user = await client.wait_for('reaction_add', timeout=MAX_TIMEOUT, check=check_reaction)
   except asyncio.TimeoutError:
     await msg.clear_reactions()
-    await message.channel.send("시간이 초과되었습니다.")
+    await msg.edit(content = "시간이 초과되었습니다.")
     return
   await msg.clear_reactions()
   if str(reaction.emoji) == "❌":
-    await message.channel.send("거절했습니다.")
+    await msg.edit(content = "거절했습니다.")
     return
 
-  await start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute)
+  await start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, str(message.author.id), discord_id2)
 
 
-async def start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute):
+async def start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, discord_id1, discord_id2):
 
   conn = http.client.HTTPSConnection("solved.ac")
   conn.request("GET", "/api/v3/search/problem?query=*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id1 + "&sort=random", headers={ 'Content-Type': "application/json" })
@@ -97,7 +102,7 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
   problem = problems['items'][0]
   await message.channel.send(id1 + "과 " + id2 + "의 막고라가 시작됩니다.")
   await message.channel.send(problem['titleKo'] + " https://www.acmicpc.net/problem/" + str(problem['problemId']))
-  await message.channel.send("문제를 풀고 나서 '!컷'을 입력해주세요. 이 명령어는 누구든 사용할 수 있습니다.")
+  await message.channel.send("문제를 풀고 나서 '!컷'을 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
 
   def first_ac_submission(user_id, problem_id):
     URL = "https://www.acmicpc.net/status?problem_id=" + str(problem_id) + "&user_id=" + user_id + "&result_id=4"
@@ -110,7 +115,9 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
   left_second = left_minute * 60
 
   def check_message(message):
-    return message.content == "!컷" or message.content == "!취소"
+    return (message.content == "!컷" or message.content == "!취소") and (str(message.author.id) == discord_id1 or str(message.author.id) == discord_id2)
+
+  msg_time = await message.channel.send("남은 시간 " + str(left_minute) + "분")
 
   while True:
     try:
@@ -120,11 +127,11 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
         await message.channel.send("제한시간이 초과되었습니다.")
         return
       if left_second % (60 * notification_minute) == 0 or left_second == 60:
-        await message.channel.send("남은 시간 " + str(left_second//60) + "분")
+        await msg_time.edit(content = "남은 시간 " + str(left_second//60) + "분")
       elif left_second == 10 :
-        await message.channel.send("남은 시간 10초")
+        await msg_time.edit(content = "남은 시간 10초")
       elif left_second <= 5 :
-        await message.channel.send("남은 시간 " + str(left_second) + "초")
+        await msg_time.edit(content = "남은 시간 " + str(left_second) + "초")
       left_second -= 1
     else:
       if msg.content == "!취소" :
