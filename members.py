@@ -2,6 +2,16 @@ import asyncio
 
 # discord_id, baekjoon_id, rating, win, lose
 member_list = []
+with open("member_list.txt", "r") as f:
+  for line in f:
+    member_list.append(line.strip().split())
+
+baekjoon_id_list = []
+for member in member_list:
+  baekjoon_id_list.append(member[1])
+
+
+
 makgoraing_list = set()
 async def is_makgoraing(id):
   if id in makgoraing_list:
@@ -16,18 +26,10 @@ async def makgoraing_list_del(id1, id2):
   makgoraing_list.remove(id1)
   makgoraing_list.remove(id2)
 
-with open("member_list.txt", "r") as f:
-  for line in f:
-    member_list.append(line.strip().split())
-
-baekjoon_id_list = []
-for member in member_list:
-  baekjoon_id_list.append(member[1])
-
 async def update_baekjoon_id_list():
-  baekjoon_id_list = []
   for member in member_list:
-    baekjoon_id_list.append(member[1])
+    if member[1] not in baekjoon_id_list:
+      baekjoon_id_list.append(member[1])
 
 async def print_member(commands, message):
   if len(commands) == 1:
@@ -62,24 +64,22 @@ async def change_winlose(message, winner, loser) :
 
   r1 = int(member_list[win][2])
   r2 = int(member_list[lose][2])
-  
-  def change_rating(r1, r2):
-    e1 = 1 / (1 + 10 ** ((r2 - r1) / 400))
-    e2 = 1 / (1 + 10 ** ((r1 - r2) / 400))
-    return r1 + int(32 * (1 - e1)), r2 + int(32 * (0 - e2))
-  r1, r2 = change_rating(r1, r2)
+  d = int(32 * (1 - 1 / (1 + 10 ** ((r2 - r1) / 400))))
 
-  member_list[win][2] = str(r1)
-  member_list[lose][2] = str(r2)
+  member_list[win][2] = str(r1 + d)
+  member_list[lose][2] = str(r2 - d)
 
   member_list[win][3] = str(int(member_list[win][3]) + 1)
   member_list[lose][4] = str(int(member_list[lose][4]) + 1)
 
   await update_member_list()
 
+  # arrow emoji 
+
+
   await message.channel.send("결과가 반영되었습니다.")
-  await print_member(["!멤버", winner], message)
-  await print_member(["!멤버", loser], message)
+  await message.channel.send("승자 : {winner} ({r1} :arrow_right: {r1_new} (+{delta}))".format(winner = winner, r1 = r1, r1_new = r1 + d, delta = d))
+  await message.channel.send("패자 : {loser} ({r2} :arrow_right: {r2_new} ({delta}))".format(loser = loser, r2 = r2, r2_new = r2 - d, delta = -d))
 
 async def register_member(commands, message, client):
   if len(commands) != 2:
@@ -110,7 +110,8 @@ async def register_member(commands, message, client):
     print_string += str(random.randint(0, 9))
   
   # problem_number = 1008
-  msg = await message.channel.send("[" + print_string + "]을 아무 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요.")
+  msg1 = await message.channel.send(print_string)
+  msg2 = await message.channel.send("위 문구를 아무 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요.")
 
 
   def check_same_author(msg):
@@ -118,7 +119,8 @@ async def register_member(commands, message, client):
   try:
     msg = await client.wait_for('message', timeout=300.0, check=check_same_author)
   except asyncio.TimeoutError:
-    await msg.edit(content = "시간이 초과되었습니다.")
+    await msg1.delete()
+    await msg2.edit(content = "시간이 초과되었습니다.")
     return
 
   URL = "https://www.acmicpc.net/source/share/" + msg.content

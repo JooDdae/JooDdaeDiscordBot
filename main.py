@@ -24,5 +24,8 @@ async def on_message(message):
     import members
     await members.register_member(commands, message, client)
 
+# @client.command(pass_context=True, aliases=['ping'])
+# async def 핑(context: Context, *, subject : str = None):
+#     await context.send(f'핑! ({client.latency*1000}ms)')
 
 client.run(token)

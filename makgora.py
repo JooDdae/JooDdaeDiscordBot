@@ -43,7 +43,7 @@ async def request_makgora(commands, message, client):
   tier = commands[1]
   id2 = commands[2]
   left_minute = 10
-  notification_minute = 2
+  notification_minute = 1
   
   if await members.is_makgoraing(id1) == True or await members.is_makgoraing(id2) == True:
     await message.channel.send("이미 막고라 중인 멤버가 있습니다.")
@@ -83,12 +83,15 @@ async def request_makgora(commands, message, client):
     await msg.edit(content = "거절했습니다.")
     return
 
+  import members
+  await members.makgoraing_list_add(id1, id2)
   await start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, str(message.author.id), discord_id2)
+  await members.makgoraing_list_del(id1, id2)
 
 
 async def start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, discord_id1, discord_id2):
   conn = http.client.HTTPSConnection("solved.ac")
-  conn.request("GET", "/api/v3/search/problem?query=*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id1 + "&sort=random", headers={ 'Content-Type': "application/json" })
+  conn.request("GET", "/api/v3/search/problem?query=*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id2 + "&sort=random", headers={ 'Content-Type': "application/json" })
 
   res = conn.getresponse()
   data = res.read()
@@ -107,8 +110,6 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
   await message.channel.send(problem['titleKo'] + " https://www.acmicpc.net/problem/" + str(problem['problemId']))
   await message.channel.send("문제를 풀고 나서 '!컷'을 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
 
-  import members
-  await members.makgoraing_list_add(id1, id2)
 
   def first_ac_submission(user_id, problem_id):
     URL = "https://www.acmicpc.net/status?problem_id=" + str(problem_id) + "&user_id=" + user_id + "&result_id=4"
@@ -125,13 +126,26 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
 
   msg_time = await message.channel.send("남은 시간 " + str(left_minute) + "분")
 
+  async def check_result():
+    result1 = first_ac_submission(id1, problem['problemId'])
+    result2 = first_ac_submission(id2, problem['problemId'])
+    if result1 == -1 and result2 == -1:
+      return False
+    winner = [id2, id1][result2 == -1 or (result1 != -1 and result1 < result2)]
+    loser = [id2, id1][id2 == winner]
+    await message.channel.send(winner + "가 먼저 문제를 해결했습니다.")
+    import members
+    await members.change_winlose(message, winner, loser)
+    return True
+
   while True:
     try:
       msg = await client.wait_for('message', timeout=1, check=check_message)
     except asyncio.TimeoutError:
       if left_second == 0 :
-        await message.channel.send("제한시간이 초과되었습니다.")
-        await members.makgoraing_list_del(id1, id2)
+        await msg_time.edit(content = "종료")
+        if not await check_result():
+          await message.channel.send("제한시간이 초과되었습니다.")
         return
       if left_second % (60 * notification_minute) == 0 or left_second == 60:
         await msg_time.edit(content = "남은 시간 " + str(left_second//60) + "분")
@@ -143,16 +157,7 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
     else:
       if msg.content == "!취소" :
         await message.channel.send("취소되었습니다.")
-        await members.makgoraing_list_del(id1, id2)
         return
-      result1 = first_ac_submission(id1, problem['problemId'])
-      result2 = first_ac_submission(id2, problem['problemId'])
-      if result1 != -1 or result2 != -1:
-        winner = [id2, id1][result2 == -1 or (result1 != -1 and result1 < result2)]
-        loser = [id2, id1][id2 == winner]
-        await message.channel.send(winner + "가 먼저 문제를 해결했습니다.")
-        import members
-        await members.change_winlose(message, winner, loser)
-        break
+      if await check_result() :
+        return
       await message.channel.send("둘 다 아직 풀지 않았습니다.")
-  members.makgoraing_list_del(id1, id2)
