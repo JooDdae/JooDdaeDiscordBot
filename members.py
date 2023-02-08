@@ -74,9 +74,6 @@ async def change_winlose(message, winner, loser) :
 
   await update_member_list()
 
-  # arrow emoji 
-
-
   await message.channel.send("결과가 반영되었습니다.")
   await message.channel.send("승자 : {winner} ({r1} :arrow_right: {r1_new} (+{delta}))".format(winner = winner, r1 = r1, r1_new = r1 + d, delta = d))
   await message.channel.send("패자 : {loser} ({r2} :arrow_right: {r2_new} ({delta}))".format(loser = loser, r2 = r2, r2_new = r2 - d, delta = -d))
@@ -113,49 +110,61 @@ async def register_member(commands, message, client):
   msg1 = await message.channel.send(print_string)
   msg2 = await message.channel.send("위 문구를 아무 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요.")
 
+  left_time = 300
 
-  def check_same_author(msg):
-    return message.author == msg.author
-  try:
-    msg = await client.wait_for('message', timeout=300.0, check=check_same_author)
-  except asyncio.TimeoutError:
-    await msg1.delete()
-    await msg2.edit(content = "시간이 초과되었습니다.")
+  while left_time > 0:
+    def check_same_author(msg):
+      return message.author == msg.author
+    try:
+      msg = await client.wait_for('message', timeout=1, check=check_same_author)
+    except asyncio.TimeoutError:
+      left_time -= 1
+      if left_time == 0 :
+        await msg1.delete()
+        await msg2.edit(content = "시간이 초과되었습니다.")
+        return
+      await msg2.edit(content = "위 문구를 아무 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요. ({left_time}초 남음)".format(left_time = left_time))
+      continue
+
+    if msg.content == "!취소":
+      await msg1.delete()
+      await msg2.edit(content = "취소되었습니다.")
+      return
+
+    URL = "https://www.acmicpc.net/source/share/" + msg.content
+    if msg.content[:37] == "https://www.acmicpc.net/source/share/" or msg.content[:14] == "http://boj.kr/":
+      URL = msg.content
+
+    import requests
+    page = requests.get(URL, headers={"User-Agent":"JooDdae Bot"})
+
+    if page.status_code != 200:
+      await message.channel.send("링크가 잘못되었습니다. 다시 입력해주세요.")
+      continue
+
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(page.content, 'html.parser')
+
+    input_string = soup.select("div.sample-source > div.form-group > div.col-md-12 > textarea")[0].text
+    problem_info = soup.select("div.breadcrumbs > div.container")[0].text.split()
+
+    # if problem_info[0] != str(problem_number) + "번":
+    #   await message.channel.send("제출한 문제가 잘못되었습니다.")
+    #   return
+
+    if problem_info[-1] != commands[1]:
+      await message.channel.send("아이디가 일치하지 않습니다. 다시 입력해주세요.")
+      continue
+
+    if input_string.strip() != print_string:
+      await message.channel.send("제출한 코드가 잘못되었습니다. 다시 입력해주세요.")
+      continue
+
+    member_list.append([str(message.author.id), commands[1], "1000", "0", "0"])
+    await update_member_list()
+    await message.channel.send("{mention}님이 {id}로 등록되었습니다.".format(mention=message.author.mention, id=commands[1]))
+    await print_member(["!멤버", commands[1]], message)
     return
-
-  URL = "https://www.acmicpc.net/source/share/" + msg.content
-  if msg.content[:37] == "https://www.acmicpc.net/source/share/" or msg.content[:14] == "http://boj.kr/":
-    URL = msg.content
-
-  import requests
-  page = requests.get(URL, headers={"User-Agent":"JooDdae Bot"})
-
-  if page.status_code != 200:
-    await message.channel.send("링크가 잘못되었습니다.")
-    return
-
-  from bs4 import BeautifulSoup
-  soup = BeautifulSoup(page.content, 'html.parser')
-
-  input_string = soup.select("div.sample-source > div.form-group > div.col-md-12 > textarea")[0].text
-  problem_info = soup.select("div.breadcrumbs > div.container")[0].text.split()
-
-  # if problem_info[0] != str(problem_number) + "번":
-  #   await message.channel.send("제출한 문제가 잘못되었습니다.")
-  #   return
-
-  if problem_info[-1] != commands[1]:
-    await message.channel.send("아이디가 일치하지 않습니다.")
-    return
-
-  if input_string.strip() != print_string:
-    await message.channel.send("제출한 코드가 잘못되었습니다.")
-    return
-
-  member_list.append([str(message.author.id), commands[1], "1000", "0", "0"])
-  await update_member_list()
-  await message.channel.send("{mention}님이 {id}로 등록되었습니다.".format(mention=message.author.mention, id=commands[1]))
-  await print_member(["!멤버", commands[1]], message)
 
 async def valid_baekjoon_id(id):
   return id in baekjoon_id_list

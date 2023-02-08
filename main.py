@@ -12,6 +12,10 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_message(message):
+  
+  if message.author.id == client.user.id:
+    return
+
   commands = message.content.split(" ")
   
   if commands[0] == "!막고라신청":
@@ -23,9 +27,7 @@ async def on_message(message):
   elif commands[0] == "!등록":
     import members
     await members.register_member(commands, message, client)
-
-# @client.command(pass_context=True, aliases=['ping'])
-# async def 핑(context: Context, *, subject : str = None):
-#     await context.send(f'핑! ({client.latency*1000}ms)')
+  elif commands[0] == "!도움말":
+    await message.channel.send("!막고라신청 [난이도] [상대의 BOJ ID] : 막고라를 신청할 수 있습니다.\n!멤버 : 멤버 목록을 확인할 수 있습니다.\n!등록 [BOJ ID] : 계정을 등록할 수 있습니다.\n!취소 : 진행중인 막고라나 신청을 취소할 수 있습니다.\n!도움말 : 도움말을 확인할 수 있습니다.")
 
 client.run(token)
