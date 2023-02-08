@@ -19,7 +19,6 @@ async def request_makgora(commands, message, client):
       if ".." not in tier :
         return False
       tier = tier.split("..")
-      print(tier)
       if len(tier) == 2 :
         if len(tier[0]) == 0 :
           return valid_tier(tier[1])

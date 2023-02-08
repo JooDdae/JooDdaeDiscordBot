@@ -47,11 +47,21 @@ async def change_winlose(message, winner, loser) :
     await message.channel.send("해당 멤버가 존재하지 않습니다.")
     return
 
-  for member in member_list:
-    if member[1] == winner:
-      member[3] = str(int(member[3]) + 1)
-    elif member[1] == loser:
-      member[4] = str(int(member[4]) + 1)
+  r1 = int(member_list[win][2])
+  r2 = int(member_list[lose][2])
+  
+  def change_rating(r1, r2):
+    e1 = 1 / (1 + 10 ** ((r2 - r1) / 400))
+    e2 = 1 / (1 + 10 ** ((r1 - r2) / 400))
+    return r1 + 32 * (1 - e1), r2 + 32 * (0 - e2)
+  r1, r2 = change_rating(r1, r2)
+
+  member_list[win][2] = str(r1)
+  member_list[lose][2] = str(r2)
+
+  member_list[win][3] = str(int(member_list[win][3]) + 1)
+  member_list[lose][4] = str(int(member_list[lose][4]) + 1)
+
   await update_member_list()
 
   await message.channel.send("결과가 반영되었습니다.")
