@@ -40,23 +40,6 @@ async def get_discord_id(baekjoon_id):
       return member[0]
   return ""
 
-async def print_member(commands, message):
-  if len(commands) == 1:
-    msg = "멤버 목록입니다. 멤버의 정보를 보려면 '!멤버 [멤버 이름]'을 입력해주세요.\n"
-    for member in member_list:
-      msg += member[1] + " "
-    await message.channel.send(msg)
-  elif len(commands) == 2:
-    for member in member_list:
-      if member[1] == commands[1]:
-        msg = "백준 아이디: " + member[1] + "\n"
-        msg += "레이팅: " + member[2] + "\n"
-        msg += "승: " + member[3] + "\n"
-        msg += "패: " + member[4] + "\n"
-        await message.channel.send(msg)
-        return
-    await message.channel.send("해당 멤버가 존재하지 않습니다.")
-
 async def update_member_list():
   with open("member_list.txt", "w") as f:
     for member in member_list:
@@ -167,5 +150,4 @@ async def register_member(commands, message, client):
     member_list.append([str(message.author.id), commands[1], "1000", "0", "0"])
     await update_member_list()
     await message.channel.send("{mention}님이 {id}로 등록되었습니다.".format(mention=message.author.mention, id=commands[1]))
-    await print_member(["!멤버", commands[1]], message)
     return
