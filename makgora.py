@@ -70,8 +70,8 @@ async def request_makgora(commands, message, client):
 
 
 async def start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, discord_id1, discord_id2):
-  import solvedac
-  problem_list = await solvedac.get_problems("*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id2, 1)
+  import solvedac_api
+  problem_list = await solvedac_api.get_problems("*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id2, 1)
 
   if problem_list == [-1]:
     msg = await message.channel.send("API가 정상적으로 동작하지 않아 취소되었습니다.")

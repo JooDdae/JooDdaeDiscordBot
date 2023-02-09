@@ -27,10 +27,10 @@ async def on_message(message):
 
   if commands[0] == "!막고라신청":
     await makgora.request_makgora(commands, message, client)
-  elif commands[0] == "!멤버":
-    await output.print_member(commands, message)
   elif commands[0] == "!등록":
     await members.register_member(commands, message, client)
+  elif commands[0] == "!멤버":
+    await output.print_member(commands, message)
   elif commands[0] == "!도움말":
     await output.print_help(commands, message, client)
   elif commands[0] == "!랭킹":
