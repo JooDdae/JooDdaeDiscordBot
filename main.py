@@ -1,9 +1,14 @@
 import discord
-import discord_token
 
-token = discord_token.discord_token
+from discord_token import DISCORD_TOKEN
+from fileio import get_member_list, open_makgora_log
+from makgora import change_rating, request_makgora
+from user import User, register_discord_user
+from output import print_help, print_users, print_ranking
+
+
 headers = {"User-Agent":"JooDdae Bot"}
-MAX_TIMEOUT = 30
+REQUESTS_TIMEOUT = 30
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -14,30 +19,39 @@ client = discord.Client(intents=intents)
 # boot event
 @client.event
 async def on_ready():
-    import fileio
-    await fileio.simulate_log()
+    member_list = await get_member_list()
+    for discord_id, boj_id in member_list:
+        User.add_user(discord_id, boj_id, False)
+
+    log_file = await open_makgora_log()
+    with log_file as f:
+        for line in f:
+            log = line.strip().split()
+            if len(log) == 0:
+                continue
+            if log[0] == "makgora":
+                _, challenger, challenged, result = log
+                change_rating(challenger, challenged, result, False)
 
 @client.event
-async def on_message(message):
+async def on_message(message: discord.Message):
     if message.author.id == client.application_id:
         return
 
     commands = message.content.split(" ")
-    
+
     if commands[0] == "!아이디확인":
         print(message.author.id)
-    
-    import makgora, members, output
 
     if commands[0] == "!막고라신청":
-        await makgora.request_makgora(commands, message, client)
+        await request_makgora(commands, message, client)
     elif commands[0] == "!등록":
-        await members.register_member(commands, message, client)
+        await register_discord_user(commands, message, client)
     elif commands[0] == "!멤버":
-        await output.print_member(message.channel)
+        await print_users(message.channel)
     elif commands[0] == "!도움말":
-        await output.print_help(message.channel)
+        await print_help(message.channel)
     elif commands[0] == "!랭킹":
-        await output.print_ranking(message.channel)
-    
-client.run(token)
+        await print_ranking(message.channel)
+
+client.run(DISCORD_TOKEN)
