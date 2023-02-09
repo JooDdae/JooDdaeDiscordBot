@@ -10,6 +10,13 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
+
+# boot event
+@client.event
+async def on_ready():
+  import fileio
+  await fileio.simulate_log()
+
 @client.event
 async def on_message(message):
   
@@ -32,7 +39,7 @@ async def on_message(message):
   elif commands[0] == "!멤버":
     await output.print_member(commands, message)
   elif commands[0] == "!도움말":
-    await output.print_help(commands, message, client)
+    await output.print_help(message.channel)
   elif commands[0] == "!랭킹":
     await output.print_ranking(commands, message, client)
   

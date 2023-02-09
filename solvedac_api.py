@@ -1,4 +1,4 @@
-async def get_problems(query, number = 1):
+async def get_problems(query, number):
   import http, json
 
   if "sort" not in query :

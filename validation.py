@@ -18,8 +18,18 @@ async def valid_tier(tier):
   return False
 
 async def valid_baekjoon_id(id):
-  import members
-  return id in members.baekjoon_id_list
+  import requests
+  URL = "https://www.acmicpc.net/user/" + id
+  page = requests.get(URL, headers={"User-Agent":"JooDdae Bot"})
+  return page.status_code == 200
+
+async def valid_registered_baekjoon_id(id):
+  import fileio
+  return id in await fileio.get_baekjoon_id_list()
+
+async def valid_registered_discord_id(id):
+  import fileio
+  return id in await fileio.get_discord_id_list()
 
 async def valid_register_url(url, id, print_string):
   if url[:37] != "https://www.acmicpc.net/source/share/" and url[:14] != "http://boj.kr/":
@@ -35,3 +45,7 @@ async def valid_register_url(url, id, print_string):
   if input_string.strip() != print_string:
     return "제출한 코드가 잘못되었습니다. 다시 입력해주세요."
   return "pass"
+
+async def valid_logged_id(baekjoon_id):
+  import members
+  return await valid_registered_baekjoon_id(baekjoon_id) and (await members.get_win(baekjoon_id) + await members.get_lose(baekjoon_id)) > 0

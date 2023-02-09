@@ -1,36 +1,55 @@
-import asyncio, http.client, json, requests
-from bs4 import BeautifulSoup
-
-headers = {"User-Agent":"JooDdae Bot"}
+import asyncio
 MAX_TIMEOUT = 30
 
 async def request_makgora(commands, message, client):
-  if len(commands[0]) == 0:
-      await message.channel.send("TODO : 설명 추가")
-      return
-
   import members, validation
 
-  id1 = await members.get_baekjoon_id(message.author.id)
-  if len(id1) == 0 :
-    await message.channel.send("등록되지 않은 멤버입니다. '!등록 [백준 아이디]' 형식으로 등록해주세요.")
-    return
+  if len(commands) == 1:
+      await message.channel.send("'!막고라신청 [난이도] [상대방 아이디] (추가쿼리)' 로 상대방에게 막고라를 신청할 수 있습니다.")
+      return
 
-  if len(commands) != 3 or await validation.valid_tier(commands[1]) == False or await validation.valid_baekjoon_id(commands[2]) == False or id1 == commands[2]:
-    await message.channel.send("TODO : 어떻게 잘못되었는지 설명 추가")
-    await message.channel.send("형식이 잘못되었습니다. '!막고라신청 [난이도] [상대방 아이디]' 형식으로 입력해주세요.")
+  discord_id1 = str(message.author.id)
+  if await validation.valid_registered_discord_id(discord_id1) == False:
+    await message.channel.send(f"{message.author.mention}님은 아직 등록하지 않았습니다. '!등록 [백준 아이디]' 형식으로 등록해주세요.")
+    return
+  baekjoon_id1 = await members.get_baekjoon_id(discord_id1)
+
+  if await members.is_active(baekjoon_id1):
+    await message.channel.send("다른 활동을 하고 있어 막고라를 신청할 수 없습니다.")
+    return
+  invalid = ""
+  if await validation.valid_tier(commands[1]) == False:
+    invalid += "티어의 범위가 잘못되었습니다.\n"
+  elif await validation.valid_registered_baekjoon_id(commands[2]) == False:
+    invalid += "등록되지 않은 백준 아이디입니다.\n"
+  elif baekjoon_id1 == commands[2]:
+    invalid += "자기 자신에게 막고라를 신청할 수 없습니다.\n"
+  
+  if invalid != "":
+    invalid += "'!막고라신청 [난이도] [상대방 아이디] (추가쿼리)' 형식으로 입력해주세요."
+    await message.channel.send(invalid)
     return
 
   tier = commands[1]
-  id2 = commands[2]
+  baekjoon_id2 = commands[2]
   left_minute = 10
   notification_minute = 1
+
+  query = ""
+  for i in range(3, len(commands)):
+    query += "%20" + commands[i]
   
-  if await members.is_active(id1) == True or await members.is_active(id2) == True:
-    await message.channel.send("이미 막고라 중인 멤버가 있습니다.")
+  if await members.is_active(baekjoon_id2):
+    await message.channel.send("상대방이 다른 활동을 하고 있어 막고라를 신청할 수 없습니다.")
     return
+  await members.active_list_add([baekjoon_id1, baekjoon_id2])
   
-  msg = await message.channel.send(f"<@{message.author.id}>님, {tier} 난이도의 문제로 {id2}에게 막고라를 신청하는게 맞습니까?")
+  request_message = f"<@{discord_id1}>({baekjoon_id1})님, {tier} 난이도의 문제로 {baekjoon_id2}에게 막고라를 신청하는게 맞습니까?"
+  if query != "":
+    nq = query.replace("%20", " ")
+    request_message += f" (추가 쿼리 <{nq}>)"
+  
+  msg = await message.channel.send(request_message)
   await msg.add_reaction("✅")
   await msg.add_reaction("❌")
   def check_reaction(reaction, user):
@@ -40,14 +59,16 @@ async def request_makgora(commands, message, client):
   except asyncio.TimeoutError:
     await msg.clear_reactions()
     await msg.edit(content = "시간이 초과되었습니다.")
+    await members.active_list_del([baekjoon_id1, baekjoon_id2])
     return
   await msg.clear_reactions()
   if str(reaction.emoji) == "❌":
     await msg.edit(content = "취소되었습니다.")
     return
 
-  discord_id2 = await members.get_discord_id(id2)
-  msg = await message.channel.send(f"<@{discord_id2}>({id2})님, <@{message.author.id}>({id1})님의 막고라 신청을 수락하겠습니까?")
+
+  discord_id2 = await members.get_discord_id(baekjoon_id2)
+  msg = await message.channel.send(f"<@{discord_id2}>({baekjoon_id2})님, <@{discord_id1}>({baekjoon_id1})님의 막고라 신청을 수락하겠습니까?", reference = msg)
   await msg.add_reaction("✅")
   await msg.add_reaction("❌")
   def check_reaction(reaction, user):
@@ -57,21 +78,45 @@ async def request_makgora(commands, message, client):
   except asyncio.TimeoutError:
     await msg.clear_reactions()
     await msg.edit(content = "시간이 초과되었습니다.")
+    await members.active_list_del([baekjoon_id1, baekjoon_id2])
     return
   await msg.clear_reactions()
   if str(reaction.emoji) == "❌":
     await msg.edit(content = "거절했습니다.")
     return
 
+  await start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_id2, left_minute, notification_minute, discord_id1, discord_id2, query)
+  await members.active_list_del([baekjoon_id1, baekjoon_id2])
+
+
+async def result_makgora(challenger, challenged, result, add_log = True):
+  import fileio
+  if add_log == True:
+    await fileio.add_makgora_log(challenger, challenged, result)
+
+  if result == "tie" :
+    return 0
+
+  winner = challenger
+  loser = challenged
+  if result == "lost":
+    winner, loser = loser, winner
+
   import members
-  await members.active_list_add(id1, id2)
-  await start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, str(message.author.id), discord_id2)
-  await members.active_list_del(id1, id2)
+  wr = await members.get_rating(winner)
+  lr = await members.get_rating(loser)
+
+  delta = int(32 * (1 - 1 / (1 + 10 ** ((lr - wr) / 400))))
+  await members.change_rating(winner, delta)
+  await members.change_win(winner, 1)
+  await members.change_rating(loser, -delta)
+  await members.change_lose(loser, 1)
+  return delta
 
 
-async def start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, discord_id1, discord_id2):
+async def start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_id2, left_minute, notification_minute, discord_id1, discord_id2, query):
   import solvedac_api
-  problem_list = await solvedac_api.get_problems("*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id2, 1)
+  problem_list = await solvedac_api.get_problems("*" + tier + "%20-solved_by%3A" + baekjoon_id1 + "%20-solved_by%3A" + baekjoon_id2 + query, 1)
 
   if problem_list == [-1]:
     msg = await message.channel.send("API가 정상적으로 동작하지 않아 취소되었습니다.")
@@ -82,9 +127,9 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
     return
 
   problem = problem_list[0]
-  await message.channel.send(id1 + "과 " + id2 + "의 막고라가 시작됩니다.")
+  await message.channel.send(baekjoon_id1 + "과 " + baekjoon_id2 + "의 막고라가 시작됩니다.")
   await message.channel.send(problem['titleKo'] + " https://www.acmicpc.net/problem/" + str(problem['problemId']))
-  await message.channel.send("문제를 풀고 나서 '!컷'을 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
+  await message.channel.send("문제를 풀고 나서 '!컷'을 입력하거나 취소를 위해 '!취소'를 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
 
   left_second = left_minute * 60
 
@@ -95,15 +140,16 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
 
   async def check_result():
     import boj_crawling
-    result1 = boj_crawling.first_ac_submission(id1, problem['problemId'])
-    result2 = boj_crawling.first_ac_submission(id2, problem['problemId'])
+    result1 = await boj_crawling.first_ac_submission(baekjoon_id1, problem['problemId'])
+    result2 = await boj_crawling.first_ac_submission(baekjoon_id2, problem['problemId'])
     if result1 == -1 and result2 == -1:
       return False
-    winner = [id2, id1][result2 == -1 or (result1 != -1 and result1 < result2)]
-    loser = [id2, id1][id2 == winner]
+    winner = [baekjoon_id2, baekjoon_id1][result2 == -1 or (result1 != -1 and result1 < result2)]
+    loser = [baekjoon_id2, baekjoon_id1][baekjoon_id2 == winner]
     await message.channel.send(winner + "가 먼저 문제를 해결했습니다.")
-    import members
-    await members.change_winlose(message, winner, loser)
+    import output
+    delta = await result_makgora(winner, loser, "win")
+    await output.print_change(message.channel, winner, loser, delta)
     return True
 
   while True:
@@ -114,6 +160,8 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
         await msg_time.edit(content = "종료")
         if not await check_result():
           await message.channel.send("제한시간이 초과되었습니다.")
+          await result_makgora(baekjoon_id1, baekjoon_id2, "tie")
+          return
         return
       if left_second % (60 * notification_minute) == 0 or left_second == 60:
         await msg_time.edit(content = "남은 시간 " + str(left_second//60) + "분")
