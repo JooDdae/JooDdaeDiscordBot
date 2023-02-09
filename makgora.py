@@ -9,33 +9,14 @@ async def request_makgora(commands, message, client):
       await message.channel.send("TODO : 설명 추가")
       return
 
-  def valid_tier(tier):
-    tier = tier.lower()
-    if len(tier) == 1:
-      return tier[0] in "bsgpdr"
-    elif len(tier) == 2:
-      return (tier[0] in "bsgpdr" and tier[1] in "12345") or (tier[0] in "1234567890" and tier[1] in "1234567890" and int(tier) <= 30)
-    elif len(tier) <= 6:
-      if ".." not in tier :
-        return False
-      tier = tier.split("..")
-      if len(tier) == 2 :
-        if len(tier[0]) == 0 :
-          return valid_tier(tier[1])
-        elif len(tier[1]) == 0 :
-          return valid_tier(tier[0])
-        else :
-          return valid_tier(tier[0]) and valid_tier(tier[1])
-    return False
-  
-  import members
+  import members, validation
 
   id1 = await members.get_baekjoon_id(message.author.id)
   if len(id1) == 0 :
     await message.channel.send("등록되지 않은 멤버입니다. '!등록 [백준 아이디]' 형식으로 등록해주세요.")
     return
 
-  if len(commands) != 3 or valid_tier(commands[1]) == False or await members.valid_baekjoon_id(commands[2]) == False or id1 == commands[2]:
+  if len(commands) != 3 or await validation.valid_tier(commands[1]) == False or await validation.valid_baekjoon_id(commands[2]) == False or id1 == commands[2]:
     await message.channel.send("TODO : 어떻게 잘못되었는지 설명 추가")
     await message.channel.send("형식이 잘못되었습니다. '!막고라신청 [난이도] [상대방 아이디]' 형식으로 입력해주세요.")
     return
@@ -45,12 +26,11 @@ async def request_makgora(commands, message, client):
   left_minute = 10
   notification_minute = 1
   
-  if await members.is_makgoraing(id1) == True or await members.is_makgoraing(id2) == True:
+  if await members.is_active(id1) == True or await members.is_active(id2) == True:
     await message.channel.send("이미 막고라 중인 멤버가 있습니다.")
     return
   
-
-  msg = await message.channel.send("{tier} 난이도의 문제로 {id2}에게 막고라를 신청하는게 맞습니까?".format(tier = tier, id1 = id1, id2 = id2))
+  msg = await message.channel.send("<@{id1}>님, {tier} 난이도의 문제로 {id2}에게 막고라를 신청하는게 맞습니까?".format(id1 = message.author.id, tier = tier, id2 = id2))
   await msg.add_reaction("✅")
   await msg.add_reaction("❌")
   def check_reaction(reaction, user):
@@ -67,7 +47,7 @@ async def request_makgora(commands, message, client):
     return
 
   discord_id2 = await members.get_discord_id(id2)
-  msg = await message.channel.send("<@{id2}>님, <@{id1}>({baekjoonid1})님의 막고라 신청을 수락하겠습니까?".format(id1 = user.id, id2 = discord_id2, baekjoonid1 = id1))
+  msg = await message.channel.send("<@{id2}>({baekjoonid2})님, <@{id1}>({baekjoonid1})님의 막고라 신청을 수락하겠습니까?".format(id1 = message.author.id, id2 = discord_id2, baekjoonid1 = id1, baekjoonid2 = id2))
   await msg.add_reaction("✅")
   await msg.add_reaction("❌")
   def check_reaction(reaction, user):
@@ -84,9 +64,9 @@ async def request_makgora(commands, message, client):
     return
 
   import members
-  await members.makgoraing_list_add(id1, id2)
+  await members.active_list_add(id1, id2)
   await start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, str(message.author.id), discord_id2)
-  await members.makgoraing_list_del(id1, id2)
+  await members.active_list_del(id1, id2)
 
 
 async def start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, discord_id1, discord_id2):
@@ -156,7 +136,7 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
       left_second -= 1
     else:
       if msg.content == "!취소" :
-        await message.channel.send("취소되었습니다.")
+        await msg_time.edit(content = "취소되었습니다.")
         return
       if await check_result() :
         return

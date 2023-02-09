@@ -11,25 +11,34 @@ for member in member_list:
   baekjoon_id_list.append(member[1])
 
 
+active_list = set()
+async def is_active(id):
+  return id in active_list
 
-makgoraing_list = set()
-async def is_makgoraing(id):
-  if id in makgoraing_list:
-    return True
-  return False
+async def active_list_add(id1, id2):
+  active_list.add(id1)
+  active_list.add(id2)
 
-async def makgoraing_list_add(id1, id2):
-  makgoraing_list.add(id1)
-  makgoraing_list.add(id2)
-
-async def makgoraing_list_del(id1, id2):
-  makgoraing_list.remove(id1)
-  makgoraing_list.remove(id2)
+async def active_list_del(id1, id2):
+  active_list.remove(id1)
+  active_list.remove(id2)
 
 async def update_baekjoon_id_list():
   for member in member_list:
     if member[1] not in baekjoon_id_list:
       baekjoon_id_list.append(member[1])
+
+async def get_baekjoon_id(discord_id):
+  for member in member_list:
+    if member[0] == str(discord_id):
+      return member[1]
+  return ""
+
+async def get_discord_id(baekjoon_id):
+  for member in member_list:
+    if member[1] == baekjoon_id:
+      return member[0]
+  return ""
 
 async def print_member(commands, message):
   if len(commands) == 1:
@@ -75,8 +84,8 @@ async def change_winlose(message, winner, loser) :
   await update_member_list()
 
   await message.channel.send("결과가 반영되었습니다.")
-  await message.channel.send("승자 : {winner} ({r1} :arrow_right: {r1_new} (+{delta}))".format(winner = winner, r1 = r1, r1_new = r1 + d, delta = d))
-  await message.channel.send("패자 : {loser} ({r2} :arrow_right: {r2_new} ({delta}))".format(loser = loser, r2 = r2, r2_new = r2 - d, delta = -d))
+  await message.channel.send("승자 : <@{discordid}>({winner}) ({r1} :arrow_right: {r1_new} (+{delta}))".format(discordid = await get_discord_id(winner), winner = winner, r1 = r1, r1_new = r1 + d, delta = d))
+  await message.channel.send("패자 : <@{discordid}>({loser}) ({r2} :arrow_right: {r2_new} ({delta}))".format(discordid = await get_discord_id(loser), loser = loser, r2 = r2, r2_new = r2 - d, delta = -d))
 
 async def register_member(commands, message, client):
   if len(commands) != 2:
@@ -106,7 +115,6 @@ async def register_member(commands, message, client):
   for i in range(50):
     print_string += str(random.randint(0, 9))
   
-  # problem_number = 1008
   msg1 = await message.channel.send(print_string)
   msg2 = await message.channel.send("위 문구를 아무 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요.")
 
@@ -148,10 +156,6 @@ async def register_member(commands, message, client):
     input_string = soup.select("div.sample-source > div.form-group > div.col-md-12 > textarea")[0].text
     problem_info = soup.select("div.breadcrumbs > div.container")[0].text.split()
 
-    # if problem_info[0] != str(problem_number) + "번":
-    #   await message.channel.send("제출한 문제가 잘못되었습니다.")
-    #   return
-
     if problem_info[-1] != commands[1]:
       await message.channel.send("아이디가 일치하지 않습니다. 다시 입력해주세요.")
       continue
@@ -165,18 +169,3 @@ async def register_member(commands, message, client):
     await message.channel.send("{mention}님이 {id}로 등록되었습니다.".format(mention=message.author.mention, id=commands[1]))
     await print_member(["!멤버", commands[1]], message)
     return
-
-async def valid_baekjoon_id(id):
-  return id in baekjoon_id_list
-
-async def get_baekjoon_id(id):
-  for member in member_list:
-    if member[0] == str(id):
-      return member[1]
-  return ""
-
-async def get_discord_id(id):
-  for member in member_list:
-    if member[1] == id:
-      return member[0]
-  return ""
