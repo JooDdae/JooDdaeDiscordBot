@@ -28,19 +28,17 @@ async def on_message(message):
   if commands[0] == "!아이디확인":
     print(message.author.id)
   
-  import makgora
-  import members
-  import output
+  import makgora, members, output
 
   if commands[0] == "!막고라신청":
     await makgora.request_makgora(commands, message, client)
   elif commands[0] == "!등록":
     await members.register_member(commands, message, client)
   elif commands[0] == "!멤버":
-    await output.print_member(commands, message)
+    await output.print_member(message.channel)
   elif commands[0] == "!도움말":
     await output.print_help(message.channel)
   elif commands[0] == "!랭킹":
-    await output.print_ranking(commands, message, client)
+    await output.print_ranking(message.channel)
   
 client.run(token)

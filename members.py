@@ -37,10 +37,12 @@ async def get_discord_id(baekjoon_id):
 rating = {}
 win = {}
 lose = {}
+tie = {}
 
 async def init(baekjoon_id):
   rating[baekjoon_id] = 1000
   win[baekjoon_id] = 0
+  tie[baekjoon_id] = 0
   lose[baekjoon_id] = 0
 
 async def get_rating(baekjoon_id):
@@ -63,6 +65,17 @@ async def change_win(baekjoon_id, delta):
   if baekjoon_id not in win:
     await init(baekjoon_id)
   win[baekjoon_id] += delta
+
+
+async def get_tie(baekjoon_id):
+  if baekjoon_id not in tie:
+    await init(baekjoon_id)
+  return tie[baekjoon_id]
+
+async def change_tie(baekjoon_id, delta):
+  if baekjoon_id not in tie:
+    await init(baekjoon_id)
+  tie[baekjoon_id] += delta
 
 
 async def get_lose(baekjoon_id):

@@ -6,7 +6,7 @@ async def print_help(channel):
   output += "!도움말 : 도움말을 확인할 수 있습니다."
   await channel.send(output)
 
-async def print_ranking(commands, message, client):
+async def print_ranking(channel):
   import members, fileio, validation
 
   baekjoon_id_list = await fileio.get_baekjoon_id_list()
@@ -14,7 +14,7 @@ async def print_ranking(commands, message, client):
 
   for baekjoon_id in baekjoon_id_list:
     if await validation.valid_logged_id(baekjoon_id):
-      top_list.append([baekjoon_id, await members.get_rating(baekjoon_id), await members.get_win(baekjoon_id), await members.get_lose(baekjoon_id)])
+      top_list.append([baekjoon_id, await members.get_rating(baekjoon_id), await members.get_win(baekjoon_id), await members.get_tie(baekjoon_id), await members.get_lose(baekjoon_id)])
   
   top_list.sort(key=lambda x: x[1], reverse=True)
 
@@ -24,17 +24,17 @@ async def print_ranking(commands, message, client):
     if i > 0 and top_list[i-1][1] != top_list[i][1]:
       rank = i+1
     
-    baekjoon_id, rating, win, lose = top_list[i]
-    if top_list[i][2] != top_list[0][2] : output += "[0m឵"
+    baekjoon_id, rating, win, tie, lose = top_list[i]
+    if top_list[i][1] != top_list[0][1] : output += "[0m឵"
 
     p = str(rank) + " " + baekjoon_id
     p += " "*(15-len(baekjoon_id)) + str(rating)
-    p += " "*(6-len(str(rating))) + str(win) + "승 " + str(lose) + "패"
+    p += " "*(6-len(str(rating))) + f"{win}승 {tie}무 {lose}패"
     output += p + "\n"
   output += "\n```"
-  await message.channel.send(output)
+  await channel.send(output)
 
-async def print_member(commands, message):
+async def print_member(channel):
   import fileio
   baekjoon_id_list = await fileio.get_baekjoon_id_list()
   output = "등록된 멤버 목록입니다.\n"
@@ -42,7 +42,7 @@ async def print_member(commands, message):
   for baekjoon_id in baekjoon_id_list:
     output += baekjoon_id + " "
   output += "\n```"
-  await message.channel.send(output)
+  await channel.send(output)
 #   if len(commands) == 1:
 #     msg = "멤버 목록입니다. 멤버의 정보를 보려면 '!멤버 [멤버 이름]'을 입력해주세요.\n"
 #     for member in members.member_list:
@@ -65,6 +65,16 @@ async def print_change(channel, winner, loser, delta):
   lr = await members.get_rating(loser)
 
   output = "결과가 반영되었습니다.\n"
-  output += f"승자 : <@{await members.get_discord_id(winner)}>({winner}) ({wr-delta} :arrow_right: {wr} (+{delta}))\n"
-  output += f"패자 : <@{await members.get_discord_id(loser)}>({loser}) ({lr+delta} :arrow_right: {lr} (-{delta}))"
+  output += f"승자 : <@{await members.get_discord_id(winner)}>({winner}) ({wr-delta[0]} :arrow_right: {wr} ({delta[0]:+d}))\n"
+  output += f"패자 : <@{await members.get_discord_id(loser)}>({loser}) ({lr-delta[1]} :arrow_right: {lr} ({delta[1]:+d}))"
+  await channel.send(output)
+
+async def print_tie(channel, winner, loser, delta):
+  import members
+  wr = await members.get_rating(winner)
+  lr = await members.get_rating(loser)
+
+  output = "결과가 반영되었습니다.\n"
+  output += f"<@{await members.get_discord_id(winner)}>({winner}) ({wr-delta[0]} :arrow_right: {wr} ({delta[0]:+d}))\n"
+  output += f"<@{await members.get_discord_id(loser)}>({loser}) ({lr-delta[1]} :arrow_right: {lr} ({delta[1]:+d}))"
   await channel.send(output)

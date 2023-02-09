@@ -48,4 +48,4 @@ async def valid_register_url(url, id, print_string):
 
 async def valid_logged_id(baekjoon_id):
   import members
-  return await valid_registered_baekjoon_id(baekjoon_id) and (await members.get_win(baekjoon_id) + await members.get_lose(baekjoon_id)) > 0
+  return await valid_registered_baekjoon_id(baekjoon_id) and (await members.get_win(baekjoon_id) + await members.get_tie(baekjoon_id) + await members.get_lose(baekjoon_id)) > 0

@@ -32,8 +32,7 @@ async def request_makgora(commands, message, client):
 
   tier = commands[1]
   baekjoon_id2 = commands[2]
-  left_minute = 10
-  notification_minute = 1
+  left_second = 5
 
   query = ""
   for i in range(3, len(commands)):
@@ -87,37 +86,47 @@ async def request_makgora(commands, message, client):
     await members.active_list_del([baekjoon_id1, baekjoon_id2])
     return
 
-  await start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_id2, left_minute, notification_minute, discord_id1, discord_id2, query)
+  await start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_id2, left_second, discord_id1, discord_id2, query)
   await members.active_list_del([baekjoon_id1, baekjoon_id2])
 
 
 async def result_makgora(challenger, challenged, result, add_log = True):
-  import fileio
+  import fileio, members, ex_functions
   if add_log == True:
     await fileio.add_makgora_log(challenger, challenged, result)
 
-  if result == "tie" :
-    return 0
-
   winner = challenger
   loser = challenged
-  if result == "lost":
-    winner, loser = loser, winner
-
-  import members
   wr = await members.get_rating(winner)
   lr = await members.get_rating(loser)
 
-  delta = int(32 * (1 - 1 / (1 + 10 ** ((lr - wr) / 400))))
-  await members.change_rating(winner, delta)
+  if result == "tie" :
+    if wr < lr:
+      winner, loser = loser, winner
+      wr, lr = lr, wr
+    delta1 = await ex_functions.calculate_delta(wr, lr, result)
+    delta2 = await ex_functions.calculate_delta(lr, wr, result)
+    await members.change_rating(winner, delta1)
+    await members.change_rating(loser, delta2)
+    await members.change_tie(winner, 1)
+    await members.change_tie(loser, 1)
+    return [delta1, delta2]
+
+  if result == "lost":
+    winner, loser = loser, winner
+    wr, lr = lr, wr
+
+  delta1 = await ex_functions.calculate_delta(wr, lr, "win")
+  delta2 = await ex_functions.calculate_delta(wr, lr, "lose")
+  await members.change_rating(winner, delta1)
   await members.change_win(winner, 1)
-  await members.change_rating(loser, -delta)
+  await members.change_rating(loser, delta2)
   await members.change_lose(loser, 1)
-  return delta
+  return [delta1, delta2]
 
 
-async def start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_id2, left_minute, notification_minute, discord_id1, discord_id2, query):
-  import solvedac_api
+async def start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_id2, left_second, discord_id1, discord_id2, query):
+  import solvedac_api, output, boj_crawling, ex_functions
   problem_list = await solvedac_api.get_problems("*" + tier + "%20-solved_by%3A" + baekjoon_id1 + "%20-solved_by%3A" + baekjoon_id2 + query, 1)
 
   if problem_list == [-1]:
@@ -131,17 +140,14 @@ async def start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_
   problem = problem_list[0]
   await message.channel.send(baekjoon_id1 + "과 " + baekjoon_id2 + "의 막고라가 시작됩니다.")
   await message.channel.send(problem['titleKo'] + " https://www.acmicpc.net/problem/" + str(problem['problemId']))
-  await message.channel.send("문제를 풀고 나서 '!컷'을 입력하거나 취소를 위해 '!취소'를 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
-
-  left_second = left_minute * 60
+  await message.channel.send("문제를 풀고 나서 '!컷'을 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
 
   def check_message(message):
-    return (message.content == "!컷" or message.content == "!취소") and (str(message.author.id) == discord_id1 or str(message.author.id) == discord_id2)
+    return message.content == "!컷" and (str(message.author.id) == discord_id1 or str(message.author.id) == discord_id2)
 
-  msg_time = await message.channel.send("남은 시간 " + str(left_minute) + "분")
+  msg_time = await message.channel.send("남은 시간 " + await ex_functions.second_to_krtime(left_second))
 
   async def check_result():
-    import boj_crawling
     result1 = await boj_crawling.first_ac_submission(baekjoon_id1, problem['problemId'])
     result2 = await boj_crawling.first_ac_submission(baekjoon_id2, problem['problemId'])
     if result1 == -1 and result2 == -1:
@@ -149,7 +155,6 @@ async def start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_
     winner = [baekjoon_id2, baekjoon_id1][result2 == -1 or (result1 != -1 and result1 < result2)]
     loser = [baekjoon_id2, baekjoon_id1][baekjoon_id2 == winner]
     await message.channel.send(winner + "가 먼저 문제를 해결했습니다.")
-    import output
     delta = await result_makgora(winner, loser, "win")
     await output.print_change(message.channel, winner, loser, delta)
     return True
@@ -162,20 +167,13 @@ async def start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_
         await msg_time.edit(content = "종료")
         if not await check_result():
           await message.channel.send("제한시간이 초과되었습니다.")
-          await result_makgora(baekjoon_id1, baekjoon_id2, "tie")
+          delta = await result_makgora(baekjoon_id1, baekjoon_id2, "tie")
+          await output.print_tie(message.channel, baekjoon_id1, baekjoon_id2, delta)
           return
         return
-      if left_second % (60 * notification_minute) == 0 or left_second == 60:
-        await msg_time.edit(content = "남은 시간 " + str(left_second//60) + "분")
-      elif left_second == 10 :
-        await msg_time.edit(content = "남은 시간 10초")
-      elif left_second <= 5 :
-        await msg_time.edit(content = "남은 시간 " + str(left_second) + "초")
+      await msg_time.edit(content = "남은 시간 " + await ex_functions.second_to_krtime(left_second))
       left_second -= 1
     else:
-      if msg.content == "!취소" :
-        await msg_time.edit(content = "취소되었습니다.")
-        return
       if await check_result() :
         return
       await message.channel.send("둘 다 아직 풀지 않았습니다.")
