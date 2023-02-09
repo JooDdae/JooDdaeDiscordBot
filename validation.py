@@ -20,3 +20,18 @@ async def valid_tier(tier):
 async def valid_baekjoon_id(id):
   import members
   return id in members.baekjoon_id_list
+
+async def valid_register_url(url, id, print_string):
+  if url[:37] != "https://www.acmicpc.net/source/share/" and url[:14] != "http://boj.kr/":
+    url = "https://www.acmicpc.net/source/share/" + url
+  
+  import boj_crawling
+  submit_id, input_string = await boj_crawling.submit_id_code(url)
+  if submit_id == "-1" :
+    return "링크가 잘못되었습니다. 다시 입력해주세요."
+
+  if submit_id != id:
+    return "아이디가 일치하지 않습니다. 다시 입력해주세요."
+  if input_string.strip() != print_string:
+    return "제출한 코드가 잘못되었습니다. 다시 입력해주세요."
+  return "pass"

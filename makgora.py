@@ -30,7 +30,7 @@ async def request_makgora(commands, message, client):
     await message.channel.send("이미 막고라 중인 멤버가 있습니다.")
     return
   
-  msg = await message.channel.send("<@{id1}>님, {tier} 난이도의 문제로 {id2}에게 막고라를 신청하는게 맞습니까?".format(id1 = message.author.id, tier = tier, id2 = id2))
+  msg = await message.channel.send(f"<@{message.author.id}>님, {tier} 난이도의 문제로 {id2}에게 막고라를 신청하는게 맞습니까?")
   await msg.add_reaction("✅")
   await msg.add_reaction("❌")
   def check_reaction(reaction, user):
@@ -47,7 +47,7 @@ async def request_makgora(commands, message, client):
     return
 
   discord_id2 = await members.get_discord_id(id2)
-  msg = await message.channel.send("<@{id2}>({baekjoonid2})님, <@{id1}>({baekjoonid1})님의 막고라 신청을 수락하겠습니까?".format(id1 = message.author.id, id2 = discord_id2, baekjoonid1 = id1, baekjoonid2 = id2))
+  msg = await message.channel.send(f"<@{discord_id2}>({id2})님, <@{message.author.id}>({id1})님의 막고라 신청을 수락하겠습니까?")
   await msg.add_reaction("✅")
   await msg.add_reaction("❌")
   def check_reaction(reaction, user):
@@ -70,35 +70,22 @@ async def request_makgora(commands, message, client):
 
 
 async def start_makgora(commands, message, client, tier, id1, id2, left_minute, notification_minute, discord_id1, discord_id2):
-  conn = http.client.HTTPSConnection("solved.ac")
-  conn.request("GET", "/api/v3/search/problem?query=*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id2 + "&sort=random", headers={ 'Content-Type': "application/json" })
+  import solvedac
+  problem_list = await solvedac.get_problems("*" + tier + "%20-solved_by%3A" + id1 + "%20-solved_by%3A" + id2, 1)
 
-  res = conn.getresponse()
-  data = res.read()
-
-  if res.status != 200:
+  if problem_list == [-1]:
     msg = await message.channel.send("API가 정상적으로 동작하지 않아 취소되었습니다.")
     return
   
-  problems = json.loads(data.decode("utf-8"))
-  if problems['count'] == 0:
+  if problem_list == [-2]:
     msg = await message.channel.send("해당 난이도의 문제가 없어 취소되었습니다.")
     return
 
-  problem = problems['items'][0]
+  problem = problem_list[0]
   await message.channel.send(id1 + "과 " + id2 + "의 막고라가 시작됩니다.")
   await message.channel.send(problem['titleKo'] + " https://www.acmicpc.net/problem/" + str(problem['problemId']))
   await message.channel.send("문제를 풀고 나서 '!컷'을 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
 
-
-  def first_ac_submission(user_id, problem_id):
-    URL = "https://www.acmicpc.net/status?problem_id=" + str(problem_id) + "&user_id=" + user_id + "&result_id=4"
-    page = requests.get(URL, headers=headers)
-    soup = BeautifulSoup(page.content, "lxml")
-    if len(soup.select("tbody > tr")) == 0 :
-      return -1
-    return int(soup.select("tbody > tr")[-1].select("td")[0].text)
-  
   left_second = left_minute * 60
 
   def check_message(message):
@@ -107,8 +94,9 @@ async def start_makgora(commands, message, client, tier, id1, id2, left_minute, 
   msg_time = await message.channel.send("남은 시간 " + str(left_minute) + "분")
 
   async def check_result():
-    result1 = first_ac_submission(id1, problem['problemId'])
-    result2 = first_ac_submission(id2, problem['problemId'])
+    import boj_crawling
+    result1 = boj_crawling.first_ac_submission(id1, problem['problemId'])
+    result2 = boj_crawling.first_ac_submission(id2, problem['problemId'])
     if result1 == -1 and result2 == -1:
       return False
     winner = [id2, id1][result2 == -1 or (result1 != -1 and result1 < result2)]

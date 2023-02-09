@@ -67,8 +67,8 @@ async def change_winlose(message, winner, loser) :
   await update_member_list()
 
   await message.channel.send("결과가 반영되었습니다.")
-  await message.channel.send("승자 : <@{discordid}>({winner}) ({r1} :arrow_right: {r1_new} (+{delta}))".format(discordid = await get_discord_id(winner), winner = winner, r1 = r1, r1_new = r1 + d, delta = d))
-  await message.channel.send("패자 : <@{discordid}>({loser}) ({r2} :arrow_right: {r2_new} ({delta}))".format(discordid = await get_discord_id(loser), loser = loser, r2 = r2, r2_new = r2 - d, delta = -d))
+  await message.channel.send(f"승자 : <@{await get_discord_id(winner)}>({winner}) ({r1} :arrow_right: {r1+d} (+{d}))")
+  await message.channel.send(f"패자 : <@{await get_discord_id(loser)}>({loser}) ({r2} :arrow_right: {r2-d} (-{d}))")
 
 async def register_member(commands, message, client):
   if len(commands) != 2:
@@ -81,7 +81,7 @@ async def register_member(commands, message, client):
   
   for member in member_list:
     if member[0] == str(message.author.id):
-      await message.channel.send("이미 {id}로 등록된 멤버입니다.".format(id = member[1]))
+      await message.channel.send(f"이미 {member[1]}로 등록된 멤버입니다.")
       return
   def valid_id(id):
     import requests
@@ -114,7 +114,7 @@ async def register_member(commands, message, client):
         await msg1.delete()
         await msg2.edit(content = "시간이 초과되었습니다.")
         return
-      await msg2.edit(content = "위 문구를 아무 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요. ({left_time}초 남음)".format(left_time = left_time))
+      await msg2.edit(content = f"위 문구를 아무 문제에 제출한 후, 제출한 코드를 공유한 주소를 입력해주세요. ({left_time}초 남음)")
       continue
 
     if msg.content == "!취소":
@@ -122,32 +122,14 @@ async def register_member(commands, message, client):
       await msg2.edit(content = "취소되었습니다.")
       return
 
-    URL = "https://www.acmicpc.net/source/share/" + msg.content
-    if msg.content[:37] == "https://www.acmicpc.net/source/share/" or msg.content[:14] == "http://boj.kr/":
-      URL = msg.content
+    import validation
+    alert = await validation.valid_register_url(msg.content, commands[1], print_string)
 
-    import requests
-    page = requests.get(URL, headers={"User-Agent":"JooDdae Bot"})
-
-    if page.status_code != 200:
-      await message.channel.send("링크가 잘못되었습니다. 다시 입력해주세요.")
+    if alert != "pass" :
+      await message.channel.send(alert)
       continue
-
-    from bs4 import BeautifulSoup
-    soup = BeautifulSoup(page.content, 'html.parser')
-
-    input_string = soup.select("div.sample-source > div.form-group > div.col-md-12 > textarea")[0].text
-    problem_info = soup.select("div.breadcrumbs > div.container")[0].text.split()
-
-    if problem_info[-1] != commands[1]:
-      await message.channel.send("아이디가 일치하지 않습니다. 다시 입력해주세요.")
-      continue
-
-    if input_string.strip() != print_string:
-      await message.channel.send("제출한 코드가 잘못되었습니다. 다시 입력해주세요.")
-      continue
-
+    
     member_list.append([str(message.author.id), commands[1], "1000", "0", "0"])
     await update_member_list()
-    await message.channel.send("{mention}님이 {id}로 등록되었습니다.".format(mention=message.author.mention, id=commands[1]))
+    await message.channel.send(f"{message.author.mention}님이 {commands[1]}로 등록되었습니다.")
     return
