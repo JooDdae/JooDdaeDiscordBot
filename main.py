@@ -19,7 +19,6 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    print(client.application_id)
     if message.author.id == client.application_id:
         return
 
