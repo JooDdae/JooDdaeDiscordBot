@@ -64,6 +64,7 @@ async def request_makgora(commands, message, client):
   await msg.clear_reactions()
   if str(reaction.emoji) == "❌":
     await msg.edit(content = "취소되었습니다.")
+    await members.active_list_del([baekjoon_id1, baekjoon_id2])
     return
 
 
@@ -83,6 +84,7 @@ async def request_makgora(commands, message, client):
   await msg.clear_reactions()
   if str(reaction.emoji) == "❌":
     await msg.edit(content = "거절했습니다.")
+    await members.active_list_del([baekjoon_id1, baekjoon_id2])
     return
 
   await start_makgora(commands, message, client, tier, baekjoon_id1, baekjoon_id2, left_minute, notification_minute, discord_id1, discord_id2, query)
