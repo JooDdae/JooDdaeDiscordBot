@@ -1,48 +1,28 @@
+from io import TextIOWrapper
 
 
-async def get_member_list():
-    member_list = []
-    with open("member_list.txt", "r") as f:
-        for line in f:
+async def get_member_list() -> list[list[str]]:
+    member_list: list[list[str]] = []
+    with open("member_list.txt", "r", encoding="utf-8") as file:
+        for line in file:
             member_list.append(line.strip().split())
     return member_list
 
-async def get_baekjoon_id_list():
+async def get_discord_id_list() -> list[str]:
     member_list = await get_member_list()
-    baekjoon_id_list = []
-    for member in member_list:
-        baekjoon_id_list.append(member[1])
-    return baekjoon_id_list
+    return list(map(lambda line: line[0], member_list))
 
-async def get_discord_id_list():
+async def get_boj_id_list() -> list[str]:
     member_list = await get_member_list()
-    discord_id_list = []
-    for member in member_list:
-        discord_id_list.append(member[0])
-    return discord_id_list
+    return list(map(lambda line: line[1], member_list))
 
+def add_user(discord_id: str, boj_id: str) -> None:
+    with open("member_list.txt", "a", encoding="utf-8") as file:
+        file.write(f"{discord_id} {boj_id}\n")
 
-async def simulate_log():
-    with open("match_log.txt", "r") as f:
-        for line in f:
-            log = line.strip().split()
+async def open_makgora_log() -> TextIOWrapper:
+    return open("match_log.txt", "r", encoding="utf-8")
 
-            if len(log) == 0:
-                continue
-
-            if log[0] == "makgora":
-                challenger = log[1]
-                challenged = log[2]
-                result = log[3]
-
-                import makgora
-                await makgora.result_makgora(challenger, challenged, result, False)
-
-
-async def add_member(discord_id, baekjoon_id):
-    with open("member_list.txt", "a") as f:
-        f.write(f"{discord_id} {baekjoon_id}\n")
-
-async def add_makgora_log(challenger, challenged, result):
-    with open("match_log.txt", "a") as f:
-        f.write(f"makgora {challenger} {challenged} {result}\n")
+def add_makgora_log(challenger: str, challenged: str, result: str) -> None:
+    with open("match_log.txt", "a", encoding="utf-8") as file:
+        file.write(f"makgora {challenger} {challenged} {result}\n")
