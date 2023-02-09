@@ -1,4 +1,3 @@
-from typing import Literal
 import asyncio
 
 import discord
@@ -10,6 +9,7 @@ from solvedac import get_problems
 
 from user import User
 from util import seconds_to_krtime
+from elo import elo_delta
 
 
 
@@ -31,15 +31,6 @@ def valid_tier(tier: str) -> bool:
             else:
                 return valid_tier(tiers[0]) and valid_tier(tiers[1])
     return False
-
-def elo_delta(rating_a: float, rating_b: float, result: Literal["win", "lose", "tie"]) -> float:
-    weight = 0.5
-    if result == "win":
-        weight = 1
-    elif result == "lose":
-        weight = 0
-    delta = 32 * (weight - 1 / (1 + 10 ** ((rating_b - rating_a) / 400)))
-    return delta
 
 def change_rating(challenger: str, challenged: str, result: str, logging: bool = True) -> tuple[float, float]:
     if logging:

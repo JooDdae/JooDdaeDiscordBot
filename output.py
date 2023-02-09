@@ -56,7 +56,7 @@ async def print_ranking(channel: Any) -> None:
         if user.rating != top_rating:
             output += "\x1B[0m឵"
 
-        output += f"{rank:<3} {user.boj_id:<15} {user.rating:4.0f} {user.win_count:4}승 {user.tie_count:4}무 {user.lose_count}패\n"
+        output += f"{rank:<3} {user.boj_id:<15} {user.rating:4.0f} {user.win_count:4}승 {user.tie_count:4}무 {user.lose_count:4}패\n"
         prev_user = user
 
     output += "\n```"
