@@ -21,21 +21,6 @@ async def print_users(channel: Any) -> None:
     output = "등록된 멤버 목록입니다.\n"
     output += f"```ansi\n{user_ids}\n```"
     await channel.send(output)
-#     if len(commands) == 1:
-#         msg = "멤버 목록입니다. 멤버의 정보를 보려면 "!멤버 [멤버 이름]"을 입력해주세요.\n"
-#         for member in members.member_list:
-#             msg += member[1] + " "
-#         await message.channel.send(msg)
-#     elif len(commands) == 2:
-#         for member in members.member_list:
-#             if member[1] == commands[1]:
-#                 msg = "백준 아이디: " + member[1] + "\n"
-#                 msg += "레이팅: " + member[2] + "\n"
-#                 msg += "승: " + member[3] + "\n"
-#                 msg += "패: " + member[4] + "\n"
-#                 await message.channel.send(msg)
-#                 return
-#         await message.channel.send("해당 멤버가 존재하지 않습니다.")
 
 async def print_ranking(channel: Any) -> None:
     ranking: list[UserInfo] = []
@@ -129,7 +114,7 @@ async def print_head_to_head_record(commands: list[str], message: discord.Messag
         output2 += "==" if is_challenger else "<="
         output2 += "💀" if match_type == "makgora" else "?"
         output2 += "=>" if is_challenger else "=="
-        output2 += f"  {user2_rating:4.0f} ⇒ {user2_rating+user2_delta:4.0f} ({add_delta_color(user2_delta)}) " + ("\x1B[33mT" if result == 'tie' else '\x1B[31mL' if is_winner else "\x1B[34mW") + "\x1B[0m\n"
+        output2 += "  " + ("\x1B[33mT" if result == 'tie' else '\x1B[31mL' if is_winner else "\x1B[34mW") + "\x1B[0m" + f" {user2_rating:4.0f} ⇒ {user2_rating+user2_delta:4.0f} ({add_delta_color(user2_delta)})\n"
     output2 += "```"
     win, tie, lose = f"{win_count}승", f"{tie_count}무", f"{lose_count}패"
     await message.channel.send(output + f"       {win:^11}{tie:^13}{lose:^11}        \x1B[0m\n" + output2)

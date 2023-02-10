@@ -24,11 +24,11 @@ def change_makgora_rating(user: str, target: str, result: str, problem: int, tim
         return 0.0
 
     delta = elo_delta(challenger.rating, challenged.rating, result)
-    Record.add_record('makgora',challenger, challenged, result, delta, problem, time, start_time)
+    Record.add_record('makgora', challenger, challenged, result, delta, problem, time, start_time)
 
     if result == "tie":
         User.update_user(challenger, rating=challenger.rating + delta, tie_count=challenger.tie_count + 1)
-        User.update_user(challenged, rating=challenger.rating - delta, tie_count=challenger.tie_count + 1)
+        User.update_user(challenged, rating=challenged.rating - delta, tie_count=challenger.tie_count + 1)
     elif result == "win":
         User.update_user(challenger, rating=challenger.rating + delta, win_count=challenger.win_count + 1)
         User.update_user(challenged, rating=challenged.rating - delta, lose_count=challenged.lose_count + 1)
