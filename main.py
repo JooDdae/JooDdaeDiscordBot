@@ -6,9 +6,6 @@ from makgora import change_makgora_rating, request_makgora
 from user import User, register_discord_user
 from output import print_help, print_users, print_ranking
 
-import boj
-from datetime import datetime as dt
-
 headers = {"User-Agent":"JooDdae Bot"}
 REQUESTS_TIMEOUT = 30
 
@@ -21,11 +18,6 @@ client = discord.Client(intents=intents)
 # boot event
 @client.event
 async def on_ready():
-    start_time = dt.now()
-    end_time = await boj.get_submit_time(55589583)
-    if end_time != None:
-        print((start_time - end_time).total_seconds())
-
     member_list = await get_member_list()
     for discord_id, boj_id in member_list:
         User.add_user(discord_id, boj_id, False)

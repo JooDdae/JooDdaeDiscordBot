@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime as dt
 
 import discord
 from boj import get_accepted_submission, get_submit_time
@@ -10,8 +11,6 @@ from solvedac import get_random_problems
 from user import User
 from util import seconds_to_krtime
 from elo import elo_delta
-
-from datetime import datetime as dt
 
 
 def change_makgora_rating(user: str, target: str, result: str, problem: int, time: int, logging: bool = True) -> float:
@@ -164,7 +163,7 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
     end_time = start_time if result == "tie" else await get_submit_time(result1 if result == "win" else result2)
     time_delta = int((end_time - start_time).total_seconds()) if end_time != None else MAKGORA_DEFAULT_TIMEOUT
     delta = change_makgora_rating(boj_id, target_boj_id, result, problem["problemId"], time_delta)
-    
+
     if result != "tie":
         winner = user if result == "win" else target
         await message.channel.send(f"{winner.boj_id}가 먼저 문제를 해결했습니다.")
