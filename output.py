@@ -4,6 +4,7 @@ import discord
 
 from record import Record
 from user import User, UserInfo
+from util import add_delta_color
 
 
 # channel: Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.DMChannel, discord.GroupChannel, discord.PartialMessageable]
@@ -106,14 +107,29 @@ async def print_head_to_head_record(commands: list[str], message: discord.Messag
     if record_list is None:
         await message.channel.send(f"{user1.boj_id}와 {user2.boj_id}의 전적을 찾을 수 없습니다.")
         return
-    output = "```ansi\n"
-    output += f"{user1.boj_id:<28}{user2.boj_id}\n"
-    output += f"{user1.rating:4.0f}     {user2.rating:4.0f}\n"
-    output += f"({user1.win_count:4}승 {user1.tie_count:4}무 {user1.lose_count:4}패)      ({user2.win_count:4}승 {user2.tie_count:4}무 {user2.lose_count:4}패)\n"
-    for match_type, challenger, challenged, result, delta, problem, time, start_datetime in record_list:
+    
+    line_length = 50
+    output = "```ansi\n\x1B[0m"
+    output += f"{user1.boj_id:^25}{user2.boj_id:^25}\n"
+    rating1, rating2 = f"{user1.rating:4.0f}", f"{user2.rating:4.0f}"
+    output += f"{rating1:^25}{rating2:^25}\n"
+    output2 = "\x1B[32m" + "-"*line_length + "\x1B[1m\n"
+    win_count, tie_count, lose_count = 0, 0, 0
+    for match_type, challenger, challenged, result, delta, _, _, _ in record_list:
         is_challenger = challenger.boj_id == user1.boj_id
         is_winner = (is_challenger and result == "win") or (not is_challenger and result == "lose")
-        output += f"{'T' if result == 'tie' else 'W' if is_winner else 'L'} {delta if is_challenger else -delta:+.0f} "
-        output += f"{-delta if is_challenger else delta:+.0f} {'T' if result == 'tie' else 'L' if is_winner else 'W'}\n"
-    output += "```"
-    await message.channel.send(output)
+        win_count += 1 if is_winner else 0
+        lose_count += 1 if not is_winner else 0
+        tie_count += 1 if result == "tie" else 0
+        user1_delta = delta if is_challenger else -delta
+        user2_delta = -delta if is_challenger else delta
+        user1_rating = challenger.rating if is_challenger else challenged.rating
+        user2_rating = challenged.rating if is_challenger else challenger.rating
+        output2 += ("\x1B[33mT" if result == 'tie' else "\x1B[34mW" if is_winner else '\x1B[31mL') + f"\x1B[0m {user1_rating:4.0f} ⇒ {user1_rating+user1_delta:4.0f} ({add_delta_color(user1_delta)})  "
+        output2 += "==" if is_challenger else "<="
+        output2 += "💀" if match_type == "makgora" else "?"
+        output2 += "=>" if is_challenger else "=="
+        output2 += f"  {user2_rating:4.0f} ⇒ {user2_rating+user2_delta:4.0f} ({add_delta_color(user2_delta)}) " + ("\x1B[33mT" if result == 'tie' else '\x1B[31mL' if is_winner else "\x1B[34mW") + "\x1B[0m\n"
+    output2 += "```"
+    win, tie, lose = f"{win_count}승", f"{tie_count}무", f"{lose_count}패"
+    await message.channel.send(output + f"       {win:^11}{tie:^13}{lose:^11}        \x1B[0m\n" + output2)

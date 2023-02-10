@@ -26,3 +26,15 @@ def valid_tier(tier: str) -> bool:
             else:
                 return valid_tier(tiers[0]) and valid_tier(tiers[1])
     return False
+
+def add_delta_color(delta: float) -> str:
+    color_delta = f"{delta:+.0f}\x1B[0m"
+    if abs(delta) < 0.5:
+        return "+ 0"
+    if len(color_delta) == 6:
+        color_delta = color_delta[0] + " " + color_delta[1:]
+    if color_delta[0] == "+" :
+        color_delta = "\x1B[34m" + color_delta
+    else :
+        color_delta = "\x1B[31m" + color_delta
+    return color_delta

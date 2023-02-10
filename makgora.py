@@ -24,6 +24,7 @@ def change_makgora_rating(user: str, target: str, result: str, problem: int, tim
         return 0.0
 
     delta = elo_delta(challenger.rating, challenged.rating, result)
+    Record.add_record('makgora',challenger, challenged, result, delta, problem, time, start_time)
 
     if result == "tie":
         User.update_user(challenger, rating=challenger.rating + delta, tie_count=challenger.tie_count + 1)
@@ -34,8 +35,7 @@ def change_makgora_rating(user: str, target: str, result: str, problem: int, tim
     else:
         User.update_user(challenger, rating=challenger.rating + delta, lose_count=challenger.lose_count + 1)
         User.update_user(challenged, rating=challenged.rating - delta, win_count=challenged.win_count + 1)
-    
-    Record.add_record('makgora',challenger, challenged, result, delta, problem, time, start_time)
+
     return delta
 
 async def request_makgora(commands: list[str], message: discord.Message, client: discord.Client) -> None:
