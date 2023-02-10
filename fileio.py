@@ -23,6 +23,6 @@ def add_user(discord_id: str, boj_id: str) -> None:
 async def open_makgora_log() -> TextIOWrapper:
     return open("match_log.txt", "r", encoding="utf-8")
 
-def add_makgora_log(challenger: str, challenged: str, result: str, problem: int, time: int) -> None:
+def add_makgora_log(challenger: str, challenged: str, result: str, problem: int, time: int, start_datetime: str) -> None:
     with open("match_log.txt", "a", encoding="utf-8") as file:
-        file.write(f"makgora {challenger} {challenged} {result} {problem} {time}\n")
+        file.write(f"makgora {challenger} {challenged} {result} {problem} {time} {start_datetime}\n")

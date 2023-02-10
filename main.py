@@ -4,7 +4,7 @@ from discord_token import DISCORD_TOKEN
 from fileio import get_member_list, open_makgora_log
 from makgora import change_makgora_rating, request_makgora
 from user import User, register_discord_user
-from output import print_help, print_users, print_ranking
+from output import print_help, print_users, print_ranking, print_head_to_head_record
 
 headers = {"User-Agent":"JooDdae Bot"}
 REQUESTS_TIMEOUT = 30
@@ -29,8 +29,8 @@ async def on_ready():
             if len(log) == 0:
                 continue
             if log[0] == "makgora":
-                _, challenger, challenged, result, problem, time = log
-                change_makgora_rating(challenger, challenged, result, int(problem), int(time), False)
+                _, challenger, challenged, result, problem, time, start_datetime = log
+                change_makgora_rating(challenger, challenged, result, int(problem), int(time), start_datetime, False)
 
 @client.event
 async def on_message(message: discord.Message):
@@ -52,5 +52,7 @@ async def on_message(message: discord.Message):
         await print_help(message.channel)
     elif commands[0] == "!랭킹":
         await print_ranking(message.channel)
+    elif commands[0] == "!상대전적":
+        await print_head_to_head_record(commands, message)
 
 client.run(DISCORD_TOKEN)

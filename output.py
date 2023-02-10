@@ -1,5 +1,8 @@
 from typing import Any
 
+import discord
+
+from record import Record
 from user import User, UserInfo
 
 
@@ -9,8 +12,7 @@ async def print_help(channel: Any) -> None:
     output = "`!막고라신청 <상대의 BOJ ID>` - 막고라를 신청할 수 있습니다.\n"
     output += "`!멤버` - 등록된 멤버의 목록을 확인할 수 있습니다.\n"
     output += "`!등록 [BOJ ID]` - 계정을 등록할 수 있습니다.\n"
-    output += "`!취소` - 진행중인 막고라나 신청을 취소할 수 있습니다.\n"
-    output += "`!도움말` - 도움말을 확인할 수 있습니다."
+    output += "`!취소` - 신청을 취소할 수 있습니다."
     await channel.send(output)
 
 async def print_users(channel: Any) -> None:
@@ -76,3 +78,42 @@ async def print_result(channel: Any, winner: UserInfo, loser: UserInfo, delta: f
         output += "패자: "
     output += f"<@{loser.discord_id}> ({loser.boj_id}): {lr:.0f} :arrow_right: {lr - delta:.0f} ({-delta:+.0f})"
     await channel.send(output)
+
+async def print_head_to_head_record(commands: list[str], message: discord.Message):
+    if not 2 <= len(commands) <= 3:
+        await message.channel.send("`!상대전적 <상대의 BOJ ID>` 혹은 `!상대전적 <BOJ ID1> <BOJ ID2>` 로 상대전적을 확인할 수 있습니다.")
+        return
+
+    if len(commands) == 2:
+        discord_id = str(message.author.id)
+        user = User.get_discord_user(discord_id)
+        if user is None:
+            await message.channel.send(f"{message.author.mention}님은 아직 봇에 등록하지 않았습니다. `!등록 <백준 아이디>` 명령어로 등록해주세요.")
+            return
+        await print_head_to_head_record([commands[0], user.boj_id, commands[1]], message)
+        return
+
+    user1, user2 = User.get_user(commands[1]), User.get_user(commands[2])
+
+    if user1 is None:
+        await message.channel.send(f"{commands[1]}님은 아직 봇에 등록하지 않았습니다.")
+        return
+    if user2 is None:
+        await message.channel.send(f"{commands[2]}님은 아직 봇에 등록하지 않았습니다.")
+        return
+
+    record_list = Record.get_head_to_head_record(user1.boj_id, user2.boj_id)
+    if record_list is None:
+        await message.channel.send(f"{user1.boj_id}와 {user2.boj_id}의 전적을 찾을 수 없습니다.")
+        return
+    output = "```ansi\n"
+    output += f"{user1.boj_id:<28}{user2.boj_id}\n"
+    output += f"{user1.rating:4.0f}     {user2.rating:4.0f}\n"
+    output += f"({user1.win_count:4}승 {user1.tie_count:4}무 {user1.lose_count:4}패)      ({user2.win_count:4}승 {user2.tie_count:4}무 {user2.lose_count:4}패)\n"
+    for match_type, challenger, challenged, result, delta, problem, time, start_datetime in record_list:
+        is_challenger = challenger.boj_id == user1.boj_id
+        is_winner = (is_challenger and result == "win") or (not is_challenger and result == "lose")
+        output += f"{'T' if result == 'tie' else 'W' if is_winner else 'L'} {delta if is_challenger else -delta:+.0f} "
+        output += f"{-delta if is_challenger else delta:+.0f} {'T' if result == 'tie' else 'L' if is_winner else 'W'}\n"
+    output += "```"
+    await message.channel.send(output)

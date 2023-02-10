@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import datetime as dt
-from bs4 import BeautifulSoup
 import re
+from bs4 import BeautifulSoup
 import requests
 
 from constants import REQUESTS_TIMEOUT

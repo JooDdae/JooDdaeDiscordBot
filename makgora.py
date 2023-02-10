@@ -9,13 +9,14 @@ from output import print_result
 from solvedac import get_random_problems
 
 from user import User
+from record import Record
 from util import seconds_to_krtime
 from elo import elo_delta
 
 
-def change_makgora_rating(user: str, target: str, result: str, problem: int, time: int, logging: bool = True) -> float:
+def change_makgora_rating(user: str, target: str, result: str, problem: int, time: int, start_time: str, logging: bool = True) -> float:
     if logging:
-        add_makgora_log(user, target, result, problem, time)
+        add_makgora_log(user, target, result, problem, time, start_time)
 
     challenger = User.get_user(user)
     challenged = User.get_user(target)
@@ -33,6 +34,8 @@ def change_makgora_rating(user: str, target: str, result: str, problem: int, tim
     else:
         User.update_user(challenger, rating=challenger.rating + delta, lose_count=challenger.lose_count + 1)
         User.update_user(challenged, rating=challenged.rating - delta, win_count=challenged.win_count + 1)
+    
+    Record.add_record('makgora',challenger, challenged, result, delta, problem, time, start_time)
     return delta
 
 async def request_makgora(commands: list[str], message: discord.Message, client: discord.Client) -> None:
@@ -66,7 +69,6 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
         await message.channel.send("상대방이 다른 활동을 하고 있어 막고라를 신청할 수 없습니다.")
         return
 
-    # request_message = f"<@{discord_id}>({boj_id})님, {tier} 난이도의 문제로 {target_boj_id}에게 막고라를 신청하는게 맞습니까?"
     request_message = f"<@{discord_id}>({boj_id})님, `{query}`의 쿼리로 {target_boj_id}님에게 막고라를 신청하는게 맞습니까?"
 
     msg = await message.channel.send(request_message)
@@ -161,8 +163,8 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
     result = "win" if result2 == -1 or (result1 != -1 and result1 < result2) else "lose" if result1 != -1 or result2 != -1 else "tie"
 
     end_time = start_time if result == "tie" else await get_submit_time(result1 if result == "win" else result2)
-    time_delta = int((end_time - start_time).total_seconds()) if end_time != None else MAKGORA_DEFAULT_TIMEOUT
-    delta = change_makgora_rating(boj_id, target_boj_id, result, problem["problemId"], time_delta)
+    time_delta = int((end_time - start_time).total_seconds()) if end_time is not None else MAKGORA_DEFAULT_TIMEOUT
+    delta = change_makgora_rating(boj_id, target_boj_id, result, problem["problemId"], time_delta, start_time.strftime("%Y-%m-%d/%H:%M:%S"))
 
     if result != "tie":
         winner = user if result == "win" else target
