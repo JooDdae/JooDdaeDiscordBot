@@ -1,75 +1,48 @@
 import asyncio
 
 import discord
-from boj import get_accepted_submission
+from boj import get_accepted_submission, get_submit_time
 from constants import MAKGORA_DEFAULT_TIMEOUT, REACTION_TIMEOUT
 from fileio import add_makgora_log
 from output import print_result
-from solvedac import get_problems
+from solvedac import get_random_problems
 
 from user import User
 from util import seconds_to_krtime
 from elo import elo_delta
 
+from datetime import datetime as dt
 
 
-def valid_tier(tier: str) -> bool:
-    tier = tier.lower()
-    if len(tier) == 1:
-        return tier[0] in "bsgpdr"
-    elif len(tier) == 2:
-        return (tier[0] in "bsgpdr" and tier[1] in "12345") or (tier[0] in "1234567890" and tier[1] in "1234567890" and int(tier) <= 30)
-    elif len(tier) <= 6:
-        if ".." not in tier:
-            return False
-        tiers = tier.split("..")
-        if len(tiers) == 2:
-            if len(tiers[0]) == 0:
-                return valid_tier(tiers[1])
-            elif len(tiers[1]) == 0:
-                return valid_tier(tiers[0])
-            else:
-                return valid_tier(tiers[0]) and valid_tier(tiers[1])
-    return False
-
-def change_rating(challenger: str, challenged: str, result: str, logging: bool = True) -> tuple[float, float]:
+def change_makgora_rating(user: str, target: str, result: str, problem: int, time: int, logging: bool = True) -> float:
     if logging:
-        add_makgora_log(challenger, challenged, result)
+        add_makgora_log(user, target, result, problem, time)
 
-    winner = User.get_user(challenger)
-    loser = User.get_user(challenged)
-    if winner is None or loser is None:
-        return (0.0, 0.0)
-    if result == "lose":
-        winner, loser = loser, winner
+    challenger = User.get_user(user)
+    challenged = User.get_user(target)
+    if challenger is None or challenged is None:
+        return 0.0
 
-    wr = winner.rating
-    lr = loser.rating
+    delta = elo_delta(challenger.rating, challenged.rating, result)
 
     if result == "tie":
-        if wr < lr:
-            winner, loser = loser, winner
-            wr, lr = lr, wr
-        winner_delta = elo_delta(wr, lr, "tie")
-        loser_delta = elo_delta(lr, wr, "tie")
-        User.update_user(winner, rating=wr + winner_delta, tie_count=winner.tie_count + 1)
-        User.update_user(loser, rating=lr + loser_delta, tie_count=loser.tie_count + 1)
-        return (winner_delta, loser_delta)
-
-    winner_delta = elo_delta(wr, lr, "win")
-    loser_delta = elo_delta(wr, lr, "lose")
-    User.update_user(winner, rating=wr + winner_delta, win_count=winner.win_count + 1)
-    User.update_user(loser, rating=lr + loser_delta, lose_count=loser.lose_count + 1)
-    return (winner_delta, loser_delta)
+        User.update_user(challenger, rating=challenger.rating + delta, tie_count=challenger.tie_count + 1)
+        User.update_user(challenged, rating=challenger.rating - delta, tie_count=challenger.tie_count + 1)
+    elif result == "win":
+        User.update_user(challenger, rating=challenger.rating + delta, win_count=challenger.win_count + 1)
+        User.update_user(challenged, rating=challenged.rating - delta, lose_count=challenged.lose_count + 1)
+    else:
+        User.update_user(challenger, rating=challenger.rating + delta, lose_count=challenger.lose_count + 1)
+        User.update_user(challenged, rating=challenged.rating - delta, win_count=challenged.win_count + 1)
+    return delta
 
 async def request_makgora(commands: list[str], message: discord.Message, client: discord.Client) -> None:
-    if len(commands) < 3:
-        await message.channel.send("`!막고라신청 <난이도> <상대방 아이디> [추가쿼리]` 로 상대방에게 막고라를 신청할 수 있습니다.")
+    if len(commands) < 2:
+        await message.channel.send("`!막고라신청 <상대의 BOJ ID> [추가쿼리]` 로 상대방에게 막고라를 신청할 수 있습니다.")
         return
 
-    tier = commands[1]
-    target_boj_id = commands[2]
-    query = " ".join(commands[3:])
+    target_boj_id = commands[1]
+    query = " ".join(commands[2:])
 
     discord_id = str(message.author.id)
     user = User.get_discord_user(discord_id)
@@ -86,9 +59,6 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
     if target_boj_id == boj_id:
         await message.channel.send("자기 자신에게 막고라를 신청할 수 없습니다.")
         return
-    if not valid_tier(tier):
-        await message.channel.send("티어의 범위가 잘못되었습니다.")
-        return
 
     if user.active:
         await message.channel.send("다른 활동을 하고 있어 막고라를 신청할 수 없습니다.")
@@ -97,9 +67,8 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
         await message.channel.send("상대방이 다른 활동을 하고 있어 막고라를 신청할 수 없습니다.")
         return
 
-    request_message = f"<@{discord_id}>({boj_id})님, {tier} 난이도의 문제로 {target_boj_id}에게 막고라를 신청하는게 맞습니까?"
-    if query != "":
-        request_message += f" (추가 쿼리 `{query}`)"
+    # request_message = f"<@{discord_id}>({boj_id})님, {tier} 난이도의 문제로 {target_boj_id}에게 막고라를 신청하는게 맞습니까?"
+    request_message = f"<@{discord_id}>({boj_id})님, `{query}`의 쿼리로 {target_boj_id}님에게 막고라를 신청하는게 맞습니까?"
 
     msg = await message.channel.send(request_message)
     await msg.add_reaction("✅")
@@ -150,13 +119,17 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
         return
 
     left_second = MAKGORA_DEFAULT_TIMEOUT
-    problem_list = await get_problems(f"*{tier} -solved_by:{boj_id} -solved_by:{target_boj_id} {query}")
+    problem_list = await get_random_problems(f"-solved_by:{boj_id} -solved_by:{target_boj_id} {query}")
 
     if problem_list == -1:
+        User.update_user(user, active=False)
+        User.update_user(target, active=False)
         msg = await message.channel.send("API가 정상적으로 동작하지 않아 취소되었습니다.")
         return
 
     if problem_list == -2:
+        User.update_user(user, active=False)
+        User.update_user(target, active=False)
         msg = await message.channel.send("해당 난이도의 문제가 없어 취소되었습니다.")
         return
 
@@ -165,6 +138,7 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
     await message.channel.send(f"{problem['titleKo']}: https://www.acmicpc.net/problem/{problem['problemId']}")
     await message.channel.send("문제를 풀고 나서 `!컷`을 입력해주세요. 이 명령어는 막고라를 진행중인 두 사람만 사용할 수 있습니다.")
 
+    start_time = dt.now()
     time_msg = await message.channel.send(f"남은 시간  {seconds_to_krtime(left_second)}")
 
     result1 = -1
@@ -185,20 +159,16 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
             left_second -= 1
             await time_msg.edit(content=f"남은 시간: {seconds_to_krtime(left_second)}")
 
-    if left_second > 0:
-        result = "win" if result2 == -1 or (result1 != -1 and result1 < result2) else "lose"
-        delta = change_rating(boj_id, target_boj_id, result)
+    result = "win" if result2 == -1 or (result1 != -1 and result1 < result2) else "lose" if result1 != -1 or result2 != -1 else "tie"
+
+    end_time = start_time if result == "tie" else await get_submit_time(result1 if result == "win" else result2)
+    time_delta = int((end_time - start_time).total_seconds()) if end_time != None else MAKGORA_DEFAULT_TIMEOUT
+    delta = change_makgora_rating(boj_id, target_boj_id, result, problem["problemId"], time_delta)
+    
+    if result != "tie":
         winner = user if result == "win" else target
-        loser = user if result == "lose" else target
         await message.channel.send(f"{winner.boj_id}가 먼저 문제를 해결했습니다.")
-        await print_result(message.channel, winner, loser, delta)
-    else:
-        delta = change_rating(boj_id, target_boj_id, "tie")
-        winner = user if user.rating > target.rating else target
-        loser = user if user.rating <= target.rating else target
-        await time_msg.edit(content = "종료")
-        await message.channel.send("제한시간이 초과되었습니다.")
-        await print_result(message.channel, winner, loser, delta, True)
+    await print_result(message.channel, user, target, delta, result)
 
     User.update_user(user, active=False)
     User.update_user(target, active=False)

@@ -6,7 +6,7 @@ from user import User, UserInfo
 # channel: Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.DMChannel, discord.GroupChannel, discord.PartialMessageable]
 
 async def print_help(channel: Any) -> None:
-    output = "`!막고라신청 [난이도] [상대의 BOJ ID] (추가쿼리)` - 막고라를 신청할 수 있습니다.\n"
+    output = "`!막고라신청 <상대의 BOJ ID>` - 막고라를 신청할 수 있습니다.\n"
     output += "`!멤버` - 등록된 멤버의 목록을 확인할 수 있습니다.\n"
     output += "`!등록 [BOJ ID]` - 계정을 등록할 수 있습니다.\n"
     output += "`!취소` - 진행중인 막고라나 신청을 취소할 수 있습니다.\n"
@@ -62,15 +62,17 @@ async def print_ranking(channel: Any) -> None:
     output += "\n```"
     await channel.send(output)
 
-async def print_result(channel: Any, winner: UserInfo, loser: UserInfo, delta: tuple[float, float], tied: bool = False) -> None:
+async def print_result(channel: Any, winner: UserInfo, loser: UserInfo, delta: float, result: str) -> None:
+    if result == "lose":
+        winner, loser, delta = loser, winner, -delta
     wr = winner.rating
     lr = loser.rating
 
     output = "결과가 반영되었습니다.\n"
-    if not tied:
+    if result != "tie":
         output += "승자: "
-    output += f"<@{winner.discord_id}> ({winner.boj_id}): {wr:.0f} :arrow_right: {wr + delta[0]:.0f} ({delta[0]:+.0f})\n"
-    if not tied:
+    output += f"<@{winner.discord_id}> ({winner.boj_id}): {wr:.0f} :arrow_right: {wr + delta:.0f} ({delta:+.0f})\n"
+    if result != "tie":
         output += "패자: "
-    output += f"<@{loser.discord_id}> ({loser.boj_id}): {lr:.0f} :arrow_right: {lr + delta[1]:.0f} ({delta[1]:+.0f})"
+    output += f"<@{loser.discord_id}> ({loser.boj_id}): {lr:.0f} :arrow_right: {lr - delta:.0f} ({-delta:+.0f})"
     await channel.send(output)

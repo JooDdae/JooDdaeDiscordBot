@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime as dt
 from bs4 import BeautifulSoup
 import re
 import requests
@@ -48,3 +49,15 @@ async def get_user(boj_id: str) -> Optional[str]:
         return None
 
     return ""
+
+async def get_submit_time(submit_id: int) -> Optional[dt]:
+    url = f"https://www.acmicpc.net/status?top={submit_id}"
+    page = requests.get(url, headers=headers, timeout=REQUESTS_TIMEOUT)
+    if page.status_code != 200:
+        return None
+
+    soup = BeautifulSoup(page.content, "html.parser")
+    if len(soup.select("tbody > tr")) == 0:
+        return None
+
+    return dt.strptime(str(soup.select("tbody > tr")[0].select("td")[-1].select('a')[0]['title']), "%Y-%m-%d %H:%M:%S")

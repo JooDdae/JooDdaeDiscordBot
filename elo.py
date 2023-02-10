@@ -1,5 +1,4 @@
-from typing import Literal
-def elo_delta(rating_a: float, rating_b: float, result: Literal["win", "lose", "tie"]) -> float:
+def elo_delta(rating_a: float, rating_b: float, result: str) -> float:
     weight = 0.5
     if result == "win":
         weight = 1
