@@ -173,8 +173,6 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
     start_time = dt.now()
     time_msg = await message.channel.send(f"남은 시간  {seconds_to_krtime(left_second)}")
 
-    result1 = -1
-    result2 = -1
     user_tie = False
     target_tie = False
 
@@ -191,24 +189,26 @@ async def request_makgora(commands: list[str], message: discord.Message, client:
                         await message.channel.send("이미 무승부를 신청했습니다.")
                         continue
                     user_tie = True
+                    await message.channel.send(f"<@{discord_id}>님이 무승부를 신청했습니다.")
                 else:
                     if target_tie:
                         await message.channel.send("이미 무승부를 신청했습니다.")
                         continue
-                    target_tie = False
+                    target_tie = True
+                    await message.channel.send(f"<@{target_discord_id}>님이 무승부를 신청했습니다.")
                 if user_tie and target_tie:
                     break
                 continue
-            result1 = await get_accepted_submission(boj_id, problem["problemId"])
-            result2 = await get_accepted_submission(target_boj_id, problem["problemId"])
-            if result1 != -1 or result2 != -1:
+            if await get_accepted_submission(boj_id, problem["problemId"]) != -1 or await get_accepted_submission(target_boj_id, problem["problemId"]) != -1:
                 break
             await message.channel.send("둘 다 아직 풀지 않았습니다.")
         except asyncio.TimeoutError:
             left_second -= 1
             await time_msg.edit(content=f"남은 시간: {seconds_to_krtime(left_second)}")
 
-    result = "win" if result2 == -1 or (result1 != -1 and result1 < result2) else "lose" if result1 != -1 or result2 != -1 else "tie"
+    result1 = await get_accepted_submission(boj_id, problem["problemId"])
+    result2 = await get_accepted_submission(target_boj_id, problem["problemId"])
+    result = "tie" if result1 == -1 and result2 == -1 else "win" if result2 == -1 or (result1 != -1 and result1 < result2) else "lose"
 
     end_time = start_time if result == "tie" else await get_submit_time(result1 if result == "win" else result2)
     time_delta = int((end_time - start_time).total_seconds()) if end_time is not None else MAKGORA_DEFAULT_TIMEOUT

@@ -59,10 +59,10 @@ async def print_result(channel: Any, winner: UserInfo, loser: UserInfo, delta: f
     output = "결과가 반영되었습니다.\n"
     if result != "tie":
         output += "승자: "
-    output += f"<@{winner.discord_id}> ({winner.boj_id}): {wr:.0f} :arrow_right: {wr + delta:.0f} ({delta:+.0f})\n"
+    output += f"<@{winner.discord_id}> ({winner.boj_id}): ```ansi\n{wr:.0f} ⇒ {wr + delta:.0f} ({add_delta_color(delta)})```"
     if result != "tie":
         output += "패자: "
-    output += f"<@{loser.discord_id}> ({loser.boj_id}): {lr:.0f} :arrow_right: {lr - delta:.0f} ({-delta:+.0f})"
+    output += f"<@{loser.discord_id}> ({loser.boj_id}): ```ansi\n{lr:.0f} ⇒ {lr - delta:.0f} ({add_delta_color(-delta)})```"
     await channel.send(output)
 
 async def print_head_to_head_record(commands: list[str], message: discord.Message):

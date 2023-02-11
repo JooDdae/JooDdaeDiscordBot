@@ -5,6 +5,7 @@ from fileio import get_member_list, open_makgora_log
 from makgora import change_makgora_rating, request_makgora
 from user import User, register_discord_user
 from output import print_help, print_users, print_ranking, print_head_to_head_record
+from multi import make_multi_party
 
 headers = {"User-Agent":"JooDdae Bot"}
 REQUESTS_TIMEOUT = 30
@@ -54,5 +55,7 @@ async def on_message(message: discord.Message):
         await print_ranking(message.channel)
     elif commands[0] == "!상대전적":
         await print_head_to_head_record(commands, message)
+    elif commands[0] == "!파티생성":
+        await make_multi_party(commands, message, client)
 
 client.run(DISCORD_TOKEN)
