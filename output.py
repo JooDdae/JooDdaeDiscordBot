@@ -10,10 +10,10 @@ from util import add_delta_color
 # channel: Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.DMChannel, discord.GroupChannel, discord.PartialMessageable]
 
 async def print_help(channel: Any) -> None:
-    output = "`!막고라신청 <상대의 BOJ ID>` - 막고라를 신청할 수 있습니다.\n"
+    output = "`!막고라신청` - 상대에게 막고라를 신청할 수 있습니다.\n"
     output += "`!멤버` - 등록된 멤버의 목록을 확인할 수 있습니다.\n"
-    output += "`!등록 [BOJ ID]` - 계정을 등록할 수 있습니다.\n"
-    output += "`!취소` - 신청을 취소할 수 있습니다."
+    output += "`!등록 <BOJ ID>` - 계정을 등록할 수 있습니다.\n"
+    output += "`!상대전적` - 두 사람의 상대전적을 확인할 수 있습니다.\n"
     await channel.send(output)
 
 async def print_users(channel: Any) -> None:
@@ -92,7 +92,7 @@ async def print_head_to_head_record(commands: list[str], message: discord.Messag
     if record_list is None:
         await message.channel.send(f"{user1.boj_id}와 {user2.boj_id}의 전적을 찾을 수 없습니다.")
         return
-    
+
     line_length = 50
     output = "```ansi\n\x1B[0m"
     output += f"{user1.boj_id:^25}{user2.boj_id:^25}\n"
@@ -100,7 +100,7 @@ async def print_head_to_head_record(commands: list[str], message: discord.Messag
     output += f"{rating1:^25}{rating2:^25}\n"
     output2 = "\x1B[32m" + "-"*line_length + "\x1B[1m\n"
     win_count, tie_count, lose_count = 0, 0, 0
-    for match_type, challenger, challenged, result, delta, _, _, _ in record_list:
+    for match_type, challenger, challenged, result, delta, _, _, _, _, _, _ in record_list:
         is_challenger = challenger.boj_id == user1.boj_id
         is_winner = (is_challenger and result == "win") or (not is_challenger and result == "lose")
         win_count += 1 if is_winner else 0

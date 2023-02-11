@@ -32,7 +32,7 @@ class UserTable(object):
         return UserInfo(
             discord_id=discord_id,
             boj_id=boj_id,
-            rating=1000,
+            rating=1500,
             win_count=0,
             lose_count=0,
             tie_count=0,

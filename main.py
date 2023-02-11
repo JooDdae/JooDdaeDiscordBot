@@ -23,14 +23,14 @@ async def on_ready():
         User.add_user(discord_id, boj_id, False)
 
     log_file = await open_makgora_log()
-    with log_file as f:
-        for line in f:
+    with log_file as file:
+        for line in file:
             log = line.strip().split()
             if len(log) == 0:
                 continue
             if log[0] == "makgora":
-                _, challenger, challenged, result, problem, time, start_datetime = log
-                change_makgora_rating(challenger, challenged, result, int(problem), int(time), start_datetime, False)
+                _, challenger, challenged, result, problem, time, start_datetime, query, timeout, rated = log
+                change_makgora_rating(challenger, challenged, result, int(problem), int(time), start_datetime, query, int(timeout), rated == "True", False)
 
 @client.event
 async def on_message(message: discord.Message):
