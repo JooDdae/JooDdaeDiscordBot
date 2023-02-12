@@ -1,11 +1,4 @@
 {
-  "python.analysis.typeCheckingMode": "strict",
-  "python.linting.enabled": true,
-  "python.linting.pylintEnabled": true,
-  "python.linting.pylintArgs": [
-    "--disable=missing-module-docstring",
-    "--disable=missing-class-docstring",
-    "--disable=missing-function-docstring",
-    "--disable=line-too-long"
-  ]
+    "editor.insertSpaces": false,
+    "files.eol": "\n"
 }

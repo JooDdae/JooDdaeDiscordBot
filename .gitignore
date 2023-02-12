@@ -1,5 +1,4 @@
-discord_token.py
-__pycache__/
-```
-test.py
-*.txt
+node_modules
+.pnpm-debug.log
+index.js
+discord-token.ts
