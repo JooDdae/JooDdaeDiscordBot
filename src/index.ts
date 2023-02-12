@@ -1,8 +1,11 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import { DISCORD_TOKEN } from "./discord-token";
+import { addUser } from "./commands/user";
+import { changeMakgoraRating } from "./commands/makgora";
 import commands from "./commands";
 import { AlertMessage, Cleanup, OnCleanup } from "./common";
+import { getMatchLog, getUserList } from "./io/fileio";
 
 const client = new Client({
 	intents: [
@@ -15,6 +18,25 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
+	const userList = getUserList();
+	const matchLog = getMatchLog();
+
+	userList.forEach((user) => {
+		const [id, bojId] = user;
+		if (id !== "" && bojId !== "")
+			addUser(id, bojId);
+	});
+
+	matchLog.forEach((match) => {
+		const matchType = match[0];
+		if (matchType !== "") {
+			if (matchType === "makgora") {
+				const [id1, id2, result, problem, time, startDatetime, query, timeout, rated] = match.slice(1);
+				changeMakgoraRating(id1, id2, result, problem, time, startDatetime, query, timeout, rated);
+			}
+		}
+	});
+
 	console.log(`Ready! Logged in as ${c.user.tag}`);
 });
 

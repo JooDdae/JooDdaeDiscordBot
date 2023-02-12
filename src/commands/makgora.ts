@@ -3,6 +3,7 @@ import { Message } from "discord.js";
 import { addRecord } from "./record";
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
+import { saveMatchLog } from "../io/fileio";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
 import { OnCleanup, assert, colorDelta, eloDelta } from "../common";
 import { UserInfo, getBojId, getDiscordId, getUser } from "./user";
@@ -66,6 +67,23 @@ const resultMakgora = (
 	output += ratingChange(target.bojId, target.rating, -delta);
 	output += "```";
 	return output;
+};
+
+// eslint-disable-next-line max-len
+export const changeMakgoraRating = (user: UserInfo, target: UserInfo, result: -1 | 0 | 1, problemId: number, time: number, startDatetime: number, query: string, timeout: number, rated: boolean, logging: true | false = false) => {
+	if (logging)
+		saveMatchLog("makgora", user.bojId, target.bojId, result, problemId, time, startDatetime, query, timeout, rated);
+
+	const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
+	const delta = eloDelta(user.rating, target.rating, eloResult);
+
+	addRecord("makgora", user, target, result, delta, problemId, time, startDatetime, query, timeout, rated);
+
+	user.rating += delta;
+	target.rating -= delta;
+	user.count[result] += 1;
+	target.count[-result as -1 | 0 | 1] += 1;
+	return delta;
 };
 
 export default {
@@ -192,15 +210,8 @@ export default {
 
 		// 결과 반영
 		const result = await Promise.race([tiePromise, winPromise]);
-		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
-		const delta = eloDelta(user.rating, target.rating, eloResult);
 
-		addRecord("makgora", user, target, result, delta, problemId, endTime - startTime, startTime, query, timeout, rated);
-
-		user.rating += delta;
-		target.rating -= delta;
-		user.count[result] += 1;
-		target.count[-result as -1 | 0 | 1] += 1;
+		const delta = changeMakgoraRating(user, target, result, problemId, startTime, endTime, query, timeout, rated, true);
 
 		startingMessage.reply(resultMakgora(userId, targetId, result, delta, user, target));
 	},

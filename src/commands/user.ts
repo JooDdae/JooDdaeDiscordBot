@@ -44,6 +44,3 @@ export const addUser = (id: string, bojId: string): void => {
 	bojUserDict[bojId] = id;
 	discordUserDict[id] = bojId;
 };
-
-addUser("599129630330454037", "cgiosy");
-addUser("266477348000497664", "kyo20111");
