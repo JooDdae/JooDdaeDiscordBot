@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=index.js",
+    "build": "esbuild src/index.ts --bundle --sourcemap=inline --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=index.js",
     "start": "run-s build node",
     "node": "node index.js"
   },
