@@ -28,19 +28,19 @@ export const newUser = (id: string, bojId: string): UserInfo => ({
 	active: false,
 });
 
-export const getBojId = (discordId: string): string | undefined => discordUserDict[discordId];
+export const getBojId = (id: string): string | undefined => discordUserDict[id];
 export const getDiscordId = (bojId: string): string | undefined => bojUserDict[bojId];
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-export const getBojUser = (bojId: string): UserInfo => userDict[getBojId(bojId)!];
+export const getBojUser = (bojId: string): UserInfo => userDict[getDiscordId(bojId)!];
 export const getUser = (id: string): UserInfo => userDict[id];
 
 export const getUsers = () => Object.values(userDict);
 export const getUserBojIds = () => Object.keys(bojUserDict);
 export const getUserDiscordIds = () => Object.keys(discordUserDict);
 
-export const addUser = (discordId: string, bojId: string): void => {
-	userDict[bojId] = newUser(discordId, bojId);
-	bojUserDict[bojId] = discordId;
-	discordUserDict[discordId] = bojId;
+export const addUser = (id: string, bojId: string): void => {
+	userDict[id] = newUser(id, bojId);
+	bojUserDict[bojId] = id;
+	discordUserDict[id] = bojId;
 };

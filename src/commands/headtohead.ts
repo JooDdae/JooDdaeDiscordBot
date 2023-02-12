@@ -2,7 +2,7 @@ import { Message } from "discord.js";
 
 import { getHeadToHeadRecord } from "./record";
 import { assert, colorDelta } from "../common";
-import { getBojId, getBojUser } from "./user";
+import { getBojId, getBojUser, getDiscordId } from "./user";
 
 const usage = "`!상대전적 <상대의 BOJ ID>` 혹은 `!상대전적 <BOJ ID1> <BOJ ID2>` 로 상대전적을 확인할 수 있습니다.\n";
 
@@ -30,9 +30,9 @@ export default {
 		assert(args.length === 1 || args.length === 2, usage);
 
 		const [bojId1, bojId2] = args.length === 1 ? [userBojId, args[0]] : args;
+		assert(getDiscordId(bojId1) !== undefined, notRegisteredBoj, bojId1);
+		assert(getDiscordId(bojId2) !== undefined, notRegisteredBoj, bojId2);
 		const [user1, user2] = [getBojUser(bojId1), getBojUser(bojId2)];
-		assert(user1 !== undefined, notRegisteredBoj, bojId1);
-		assert(user2 !== undefined, notRegisteredBoj, bojId2);
 
 		const recordList = getHeadToHeadRecord(user1.bojId, user2.bojId);
 		assert(recordList !== undefined, noRatedRecord, user1.bojId, user2.bojId);
