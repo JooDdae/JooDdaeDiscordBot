@@ -18,7 +18,7 @@ export default {
 				ranking.push(user);
 		assert(ranking.length > 0, noRatedRecord);
 
-		ranking.sort((a: UserInfo, b: UserInfo) => a.rating - b.rating);
+		ranking.sort((a: UserInfo, b: UserInfo) => b.rating - a.rating);
 
 		let rank = 1;
 		let prevUser = ranking[0];

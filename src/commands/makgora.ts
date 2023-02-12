@@ -1,5 +1,6 @@
 import { Message } from "discord.js";
 
+import { addRecord } from "./record";
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
@@ -193,6 +194,9 @@ export default {
 		const result = await Promise.race([tiePromise, winPromise]);
 		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
 		const delta = eloDelta(user.rating, target.rating, eloResult);
+
+		addRecord("makgora", user, target, result, delta, problemId, endTime - startTime, startTime, query, timeout, rated);
+
 		user.rating += delta;
 		target.rating -= delta;
 		user.count[result] += 1;

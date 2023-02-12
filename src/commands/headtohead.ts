@@ -6,6 +6,8 @@ import { getBojId, getBojUser, getDiscordId } from "./user";
 
 const usage = "`!상대전적 <상대의 BOJ ID>` 혹은 `!상대전적 <BOJ ID1> <BOJ ID2>` 로 상대전적을 확인할 수 있습니다.\n";
 
+const sameUser = `같은 사람의 상대전적은 볼 수 없습니다.`;
+
 const notRegisteredUser = (userId: string) => (
 	`<@${userId}>님은 아직 봇에 등록하지 않았습니다. \`!등록 <백준 아이디>\` 명령어로 등록해주세요.`
 );
@@ -32,13 +34,14 @@ export default {
 		const [bojId1, bojId2] = args.length === 1 ? [userBojId, args[0]] : args;
 		assert(getDiscordId(bojId1) !== undefined, notRegisteredBoj, bojId1);
 		assert(getDiscordId(bojId2) !== undefined, notRegisteredBoj, bojId2);
+		assert(bojId1 !== bojId2, sameUser);
 		const [user1, user2] = [getBojUser(bojId1), getBojUser(bojId2)];
 
 		const recordList = getHeadToHeadRecord(user1.bojId, user2.bojId);
 		assert(recordList !== undefined, noRatedRecord, user1.bojId, user2.bojId);
 
 		const lineLength = 50;
-		let output = "```ansi\n\x1B[0;41m";
+		let output = "```ansi\n\x1B[1m";
 		output += `${bojId1} ${bojId2}\n`;
 		output += `${user1.rating} ${user2.rating}\n`;
 
@@ -49,10 +52,10 @@ export default {
 
 		for (const record of recordList) {
 			const isChallenger = record.challenger.bojId === bojId1;
-			const isWinner = (isChallenger && record.result === "win") || (!isChallenger && record.result === "lose");
+			const isWinner = (isChallenger && record.result === 1) || (!isChallenger && record.result === -1);
 			winCount += isWinner ? 1 : 0;
-			loseCount += !isWinner ? 1 : 0;
-			tieCount += record.result === "tie" ? 1 : 0;
+			loseCount += !isWinner && record.result !== 0 ? 1 : 0;
+			tieCount += record.result === 0 ? 1 : 0;
 
 			const user1Delta = isChallenger ? record.delta : -record.delta;
 			const user2Delta = isChallenger ? -record.delta : record.delta;
@@ -65,11 +68,11 @@ export default {
 			//     emoji = "?";
 			// }
 
-			output2 += `  ${record.result === "tie" ? "\x1B[33mT" : isWinner ? "\x1B[34mW" : "\x1B[31mL"}\x1B[0m ${user1Rating} ⇒ ${user1Rating + user1Delta} (${colorDelta(user1Delta)})\n`;
+			output2 += `${record.result === 0 ? "\x1B[33mT" : isWinner ? "\x1B[34mW" : "\x1B[31mL"}\x1B[0m ${user1Rating} ⇒ ${user1Rating + user1Delta} (${colorDelta(user1Delta)}) `;
 			output2 += isChallenger ? "==" : "<=";
 			output2 += emoji;
 			output2 += isChallenger ? "=>" : "==";
-			output2 += `  ${record.result === "tie" ? "\x1B[33mT" : isWinner ? "\x1B[31mL" : "\x1B[34mW"}\x1B[0m ${user2Rating} ⇒ ${user2Rating + user2Delta} (${colorDelta(user2Delta)})\n`;
+			output2 += ` ${record.result === 0 ? "\x1B[33mT" : isWinner ? "\x1B[31mL" : "\x1B[34mW"}\x1B[0m ${user2Rating} ⇒ ${user2Rating + user2Delta} (${colorDelta(user2Delta)})\n`;
 		}
 
 		output += `${winCount}승 ${tieCount}무 ${loseCount}패\x1B[0m\n`;
