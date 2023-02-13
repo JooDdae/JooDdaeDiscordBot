@@ -8,9 +8,9 @@ import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
 import { OnCleanup, assert, colorDelta, eloDelta } from "../common";
 import { UserInfo, getBojId, getBojUser, getDiscordId, getUser } from "./user";
 
-const usage = "`!막고라신청 <상대의 BOJ ID> <솔브드 쿼리> [t=3600] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
+const usage = "`!막고라 <상대의 BOJ ID> <솔브드 쿼리> [t=60] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
 		+ "`t`와 `r`은 비필수 옵션이며, 각각 `제한 시간(분 단위)`, `레이팅 적용 여부(0이면 미적용)`를 의미합니다. \n"
-		+ "예시: `!막고라신청 kyo20111 *p5..1`, `!막고라신청 cgiosy *s lang:en t=360 r=false`\n";
+		+ "예시: `!막고라 kyo20111 *p5..1`, `!막고라 cgiosy *s lang:en t=30 r=false`\n";
 
 const sameUser = `자기 자신에게 막고라를 신청할 수 없습니다.`;
 
