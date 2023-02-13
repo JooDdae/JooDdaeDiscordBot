@@ -21,7 +21,7 @@ const undefinedBojId = (bojId: string) => (
 	`\`${bojId}\` 백준 아이디가 존재하지 않습니다.`
 );
 
-const remainTime = (remain: number) => `등록 마감까지 남은 시간: ${(remain / 1000 / 60).toFixed(0)}분`;
+const remainTime = (remain: number) => `등록 취소까지 남은 시간: ${(remain / 1000 / 60).toFixed(0)}분`;
 
 export default {
 	command: "등록",
@@ -41,7 +41,8 @@ export default {
 		assert(existBojId(bojId), undefinedBojId, bojId);
 
 		const registerToken = `사랑해요 주때봇 ${randomBytes(16).toString("hex")}`;
-		const tokenMessage = await message.reply(`\`${bojId}\`로 봇에 등록하시려면 \`${registerToken}\`를 임의의 문제에 제출하고, 해당 코드를 공유한 주소를 입력해주세요.\n등록을 취소하려면 ❌ 이모지를 달아주세요.`);
+		const token = await message.channel.send(`\`${registerToken}\``);
+		const tokenMessage = await token.reply(`<@${id}>님, \`${bojId}\`로 봇에 등록하시려면 위 문구를 임의의 문제에 제출하고, 해당 코드를 공유한 주소를 입력해주세요.\n등록을 취소하려면 ❌ 이모지를 달아주세요.`);
 
 
 		// 병렬 실행
