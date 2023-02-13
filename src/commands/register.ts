@@ -1,12 +1,13 @@
 import { Message } from "discord.js";
+import { randomBytes } from "crypto";
 
 import { REGISTER_TIMEOUT } from "../constants";
-import { assert } from "../common";
 import { saveUser } from "../io/fileio";
-import { undefinedBoj } from "../io";
+import { OnCleanup, assert } from "../common";
 import { addUser, getBojId, getDiscordId } from "./user";
+import { existBojId, getSharedSource } from "../io/boj";
 
-const usage = "`!등록 <BOJ ID>` 봇에 등록할 수 있습니다.";
+const usage = "`!등록 <BOJ ID>`으로 봇에 등록할 수 있습니다.";
 
 const registeredDiscordUser = (id: string, userBojId: string) => (
 	`<@${id}>님은 \`${userBojId}\`로 이미 봇에 등록되어 있습니다.`
@@ -24,7 +25,7 @@ const remainTime = (remain: number) => `등록 마감까지 남은 시간: ${(re
 
 export default {
 	command: "등록",
-	execute: async(message: Message) => {
+	execute: async(message: Message, onCleanup: OnCleanup) => {
 		const { author, content } = message;
 		const id = author.id;
 
@@ -37,16 +38,56 @@ export default {
 		const bojId = args[0];
 		const registeredId = getDiscordId(bojId);
 		assert(registeredId === undefined, registeredBojId, bojId);
-		assert(undefinedBoj(bojId), undefinedBojId, bojId);
+		assert(existBojId(bojId), undefinedBojId, bojId);
 
-		const registerToken = `사랑해요 주때봇`;
+		const registerToken = `사랑해요 주때봇 ${randomBytes(16).toString("hex")}`;
+		const tokenMessage = await message.reply(`\`${bojId}\`로 봇에 등록하시려면 \`${registerToken}\`를 임의의 문제에 제출하고, 해당 코드를 공유한 주소를 입력해주세요.\n등록을 취소하려면 ❌ 이모지를 달아주세요.`);
+
+
+		// 병렬 실행
 		const startTime = Date.now();
 		const endTime = startTime + REGISTER_TIMEOUT;
 
-		const tokenMessage = await message.reply(`\`${bojId}\`로 봇에 등록하시려면 \`${registerToken}\`를 임의의 문제에 제출하고, 해당 코드를 공유한 주소를 입력해주세요.`);
 		const remainMessage = await message.channel.send(remainTime(endTime - Date.now()));
+		const updateRemain = () => {
+			const { content } = remainMessage;
+			const newContent = remainTime(endTime - Date.now());
+			if (content !== newContent) remainMessage.edit(newContent);
+		};
 
-		// 병렬 실행
+		const timer = setInterval(updateRemain, 1000);
+		onCleanup(() => clearInterval(timer));
+
+		await remainMessage.react("❌");
+		const cancelPromise = remainMessage.awaitReactions({
+			filter: ({ emoji: { name } }, { id }) => name === "❌" && id === author.id,
+			max: 1,
+			time: endTime - Date.now(),
+		}).then(() => false);
+
+		const registerPromise = (async() => {
+			while (Date.now() < endTime) {
+				// eslint-disable-next-line no-await-in-loop
+				const replyMessage = await message.channel.awaitMessages({
+					filter: ({ content, author: { id } }) => content.startsWith("http") && id === author.id,
+					max: 1,
+					time: endTime - Date.now(),
+				});
+				const sourceMessage = replyMessage.first();
+				// eslint-disable-next-line no-await-in-loop
+				const input = await getSharedSource(sourceMessage?.content);
+				if (input !== undefined && input[0] === bojId && input[1] === registerToken) return true;
+				if (sourceMessage !== undefined)
+					sourceMessage.reply("잘못된 링크입니다. 다시 입력해주세요.");
+			}
+			return false;
+		})();
+
+		const result = await Promise.race([cancelPromise, registerPromise]);
+		if (!result) {
+			await tokenMessage.reply("등록이 취소되었습니다.");
+			return;
+		}
 
 		addUser(id, bojId);
 		saveUser(id, bojId);

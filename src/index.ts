@@ -31,8 +31,8 @@ client.once(Events.ClientReady, (c) => {
 		const matchType = match[0];
 		if (matchType !== "") {
 			if (matchType === "makgora") {
-				const [id1, id2, result, problem, time, startDatetime, query, timeout, rated] = match.slice(1);
-				changeMakgoraRating(id1, id2, result, problem, time, startDatetime, query, timeout, rated);
+				// const [id1, id2, result, problem, time, startDatetime, query, timeout, rated] = match.slice(1);
+				// changeMakgoraRating(id1, id2, result, problem, time, startDatetime, query, timeout, rated);
 			}
 		}
 	});
