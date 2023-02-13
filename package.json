@@ -2,7 +2,7 @@
   "name": "jooddae-bot",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --sourcemap --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=dist/index.js",
     "start": "run-s build node",
