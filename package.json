@@ -13,7 +13,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
-    "postinstall": "prisma:push"
+    "postinstall": "prisma db push"
   },
   "author": "JooDdae",
   "devDependencies": {
