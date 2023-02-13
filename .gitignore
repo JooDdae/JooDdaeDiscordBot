@@ -1,5 +1,7 @@
 node_modules
 .pnpm-debug.log
+
+dist/
 index.js
 discord-token.ts
 *.txt
