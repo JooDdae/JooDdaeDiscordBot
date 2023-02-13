@@ -1,7 +1,7 @@
 import { Collection, Message } from "discord.js";
 
 import { OnCleanup } from "../common";
-import headtohead from "./headtohead";
+import compare from "./compare";
 import help from "./help";
 import makgora from "./makgora";
 import ranking from "./ranking";
@@ -15,7 +15,7 @@ export type Command = {
 
 const commands = new Collection<string, Command>();
 
-commands.set(headtohead.command, headtohead);
+commands.set(compare.command, compare);
 commands.set(help.command, help);
 commands.set(users.command, users);
 commands.set(ranking.command, ranking);

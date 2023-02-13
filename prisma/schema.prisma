@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../dist/bot.db"
+}
+
+model User {
+  id            String         @id
+  bojId         String         @unique
+  rating        Float
+  winCount      Int            @default(0)
+  tieCount      Int            @default(0)
+  loseCount     Int            @default(0)
+  rated         Boolean        @default(false)
+  history       Match[]
+  ratingHistory RatingRecord[]
+}
+
+model Match {
+  id           Int            @id @default(autoincrement())
+  date         DateTime       @default(now())
+  startDate    DateTime
+  type         Int
+  authorId     String
+  rated        Boolean
+  timeout      Int
+  ext          String
+  participants RatingRecord[]
+  author       User           @relation(fields: [authorId], references: [id])
+}
+
+model RatingRecord {
+  id         Int    @id @default(autoincrement())
+  userId     String
+  matchId    Int
+  result     Int
+  prevRating Float
+  delta      Float
+  user       User   @relation(fields: [userId], references: [id])
+  match      Match  @relation(fields: [matchId], references: [id])
+}

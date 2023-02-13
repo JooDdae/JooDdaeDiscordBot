@@ -4,9 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --sourcemap=inline --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=index.js",
+    "build": "esbuild src/index.ts --bundle --sourcemap --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=dist/index.js",
     "start": "run-s build node",
-    "node": "node index.js"
+    "node": "node dist/index.js",
+    "prisma": "run-s prisma:format prisma:migrate prisma:generate",
+    "studio": "prisma studio",
+    "prisma:format": "prisma format",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "postinstall": "prisma db push"
   },
   "author": "JooDdae",
   "devDependencies": {
@@ -17,9 +24,11 @@
     "esbuild": "^0.17.7",
     "eslint": "^8.34.0",
     "npm-run-all": "^4.1.5",
+    "prisma": "^4.10.1",
     "typescript": "^4.9.5"
   },
   "dependencies": {
+    "@prisma/client": "^4.10.1",
     "discord.js": "^14.7.1",
     "jsdom": "^21.1.0"
   }
