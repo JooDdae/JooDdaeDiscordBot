@@ -1,14 +1,16 @@
 import { Message } from "discord.js";
-
-import { getUserBojIds } from "./user";
+import { getUserBojIds } from "../io/db";
 
 export default {
 	command: "유저",
 	execute: async(message: Message) => {
-		const bojIdList = getUserBojIds().join(" ");
-		let output = "등록된 유저 목록입니다.\n";
-		output += `\`\`\`ansi\n${bojIdList}\n\`\`\``;
+		const bojIdList = await getUserBojIds();
 
-		await message.reply(output);
+		await message.reply(
+			"등록된 유저 목록입니다.\n"
+			+ "```ansi\n"
+			+ `${bojIdList.join(" ")}\n`
+			+ "```",
+		);
 	},
 };

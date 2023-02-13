@@ -1,12 +1,10 @@
 import { Message } from "discord.js";
 
-import { addRecord } from "./record";
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
-import { saveMatchLog } from "../io/fileio";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
 import { OnCleanup, assert, colorDelta, eloDelta } from "../common";
-import { UserInfo, getBojId, getBojUser, getDiscordId, getUser } from "./user";
+import { User, addMakgora, getUser, getUserByBojId, setActive } from "../io/db";
 
 const usage = "`!막고라 <상대의 BOJ ID> <솔브드 쿼리> [t=60] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
 		+ "`t`와 `r`은 비필수 옵션이며, 각각 `제한 시간(분 단위)`, `레이팅 적용 여부(0이면 미적용)`를 의미합니다. \n"
@@ -18,7 +16,7 @@ const userAlreadyActive = `이미 다른 곳에 참가한 상태이므로, 끝�
 
 const targetAlreadyActive = `상대방이 이미 다른 곳에 참가한 상태이므로, 끝나기 전까지 대상에게 막고라를 신청할 수 없습니다.`;
 
-const timeoutReaction = `시간이 초과되었습니다.`;
+const reactionTimedOut = `시간이 초과되었습니다.`;
 
 const cancelled = `취소되었습니다.`;
 
@@ -55,8 +53,8 @@ const resultMakgora = (
 	targetId: string,
 	result: -1 | 0 | 1,
 	delta: number,
-	user: UserInfo,
-	target: UserInfo,
+	user: User,
+	target: User,
 ) => {
 	let output = "";
 	if (result === 0) output += "막고라가 무승부로 끝났습니다.";
@@ -69,26 +67,6 @@ const resultMakgora = (
 	return output;
 };
 
-// eslint-disable-next-line max-len
-export const changeMakgoraRating = (user: string, target: string, result: -1 | 0 | 1, problemId: number, time: number, startTime: number, query: string, timeout: number, rated: boolean, logging: true | false = true) => {
-	if (logging)
-		saveMatchLog("makgora", user, target, result, problemId, time, startTime, query, timeout, rated);
-
-	const userUser = getBojUser(user);
-	const targetUser = getBojUser(target);
-
-	const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
-	const delta = eloDelta(userUser.rating, targetUser.rating, eloResult);
-
-	addRecord("makgora", userUser, targetUser, result, delta, problemId, time, startTime, query, timeout, rated);
-
-	userUser.rating += delta;
-	targetUser.rating -= delta;
-	userUser.count[result] += 1;
-	targetUser.count[-result as -1 | 0 | 1] += 1;
-	return delta;
-};
-
 export default {
 	command: "막고라",
 	execute: async(message: Message, onCleanup: OnCleanup) => {
@@ -96,8 +74,9 @@ export default {
 
 		const { author, content } = message;
 		const userId = author.id;
-		const userBojId = getBojId(userId);
-		assert(userBojId !== undefined, notRegisteredUser, userId);
+		const user = await getUser(userId);
+		assert(user !== null, notRegisteredUser, userId);
+		const userBojId = user.bojId;
 
 		const args = content.split(" ").slice(1);
 
@@ -128,21 +107,18 @@ export default {
 		assert(targetBojId !== null, usage);
 		assert(targetBojId !== userBojId, sameUser);
 
-		const targetId = getDiscordId(targetBojId);
-		assert(targetId !== undefined, notRegisteredTarget, targetBojId);
+		const target = await getUserByBojId(targetBojId);
+		assert(target !== null, notRegisteredTarget, targetBojId);
+		const targetId = target.id;
 
-		const user = getUser(userId);
-		const target = getUser(targetId);
 		assert(!user.active, userAlreadyActive);
 		assert(!target.active, targetAlreadyActive);
 
 
 		// 사용자 반응 확인 및 문제 가져오기
 
-		user.active = target.active = true;
-		onCleanup(() => {
-			user.active = target.active = false;
-		});
+		await setActive([userId, targetId]);
+		onCleanup(() => setActive([userId, targetId], false));
 
 		const checkingMessage = await message.reply(checkMakgora(query, timeout, rated, targetId, targetBojId));
 		await checkingMessage.react("✅");
@@ -158,7 +134,7 @@ export default {
 		});
 		const reaction = reactions.first();
 		checkingMessage.reactions.removeAll();
-		assert(reaction !== undefined, timeoutReaction);
+		assert(reaction !== undefined, reactionTimedOut);
 		assert(reaction.emoji.name !== "❌", cancelled);
 
 		const problems = await getRandomProblems(query);
@@ -203,7 +179,6 @@ export default {
 					time: endTime - Date.now(),
 				});
 				if (end) break;
-
 				// eslint-disable-next-line no-await-in-loop
 				const [userResult, targetResult] = await Promise.all([
 					getAcceptedSubmission(userBojId, problemId),
@@ -219,9 +194,10 @@ export default {
 		// 결과 반영
 		const result = await Promise.race([tiePromise, winPromise]);
 
-		// eslint-disable-next-line max-len
-		const delta = changeMakgoraRating(userBojId, targetBojId, result, problemId, Date.now() - startTime, startTime, encodeURIComponent(query), timeout, rated, true);
+		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
+		const delta = eloDelta(user.rating, target.rating, eloResult);
 
 		startingMessage.reply(resultMakgora(userId, targetId, result, delta, user, target));
+		await addMakgora(user, target, result, startTime, rated, delta, timeout, problemId, query);
 	},
 };

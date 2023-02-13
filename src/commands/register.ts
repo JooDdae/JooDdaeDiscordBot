@@ -1,44 +1,47 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Message } from "discord.js";
 import { randomBytes } from "crypto";
 
 import { REGISTER_TIMEOUT } from "../constants";
-import { saveUser } from "../io/fileio";
 import { OnCleanup, assert } from "../common";
-import { addUser, getBojId, getDiscordId } from "./user";
+import { addUser, getUser, getUserByBojId } from "../io/db";
 import { existBojId, getSharedSource } from "../io/boj";
 
 const usage = "`!등록 <BOJ ID>`으로 봇에 등록할 수 있습니다.";
 
-const registeredDiscordUser = (id: string, userBojId: string) => (
+const userAlreadyRegistered = (id: string, userBojId: string) => (
 	`<@${id}>님은 \`${userBojId}\`로 이미 봇에 등록되어 있습니다.`
 );
 
-const registeredBojId = (bojId: string) => (
+const bojIdAlreadyRegistered = (bojId: string) => (
 	`\`${bojId}\`는 이미 봇에 등록된 BOJ ID입니다.`
 );
 
-const undefinedBojId = (bojId: string) => (
+const notFound = (bojId: string) => (
 	`\`${bojId}\` 백준 아이디가 존재하지 않습니다.`
 );
 
-const remainTime = (remain: number) => `등록 취소까지 남은 시간: ${(remain / 1000 / 60).toFixed(0)}분`;
+const remainTime = (remain: number) => `등록 제한시간: ${(remain / 60000).toFixed(0)}분`;
 
 export default {
 	command: "등록",
 	execute: async(message: Message, onCleanup: OnCleanup) => {
 		const { author, content } = message;
-		const id = author.id;
+		const { id } = author;
 
 		const args = content.split(" ").slice(1);
 		assert(args.length === 1, usage);
-
-		const userBojId = getBojId(id);
-		assert(userBojId === undefined, registeredDiscordUser, id, userBojId as string);
-
 		const bojId = args[0];
-		const registeredId = getDiscordId(bojId);
-		assert(registeredId === undefined, registeredBojId, bojId);
-		assert(existBojId(bojId), undefinedBojId, bojId);
+
+		{
+			const user = await getUser(id);
+			assert(user === null, userAlreadyRegistered, id, user!.bojId);
+		}
+		{
+			const user = await getUserByBojId(bojId);
+			assert(user === null, bojIdAlreadyRegistered, id);
+		}
+		assert(await existBojId(bojId), notFound, bojId);
 
 		const registerToken = `사랑해요 주때봇 ${randomBytes(16).toString("hex")}`;
 		const token = await message.channel.send(`\`${registerToken}\``);
@@ -94,8 +97,9 @@ export default {
 			return;
 		}
 
-		addUser(id, bojId);
-		saveUser(id, bojId);
+		// 등록
+
+		await addUser(id, bojId);
 		await tokenMessage.reply(`<@${id}>님이 \`${bojId}\`로 봇에 등록되었습니다.`);
 	},
 };
