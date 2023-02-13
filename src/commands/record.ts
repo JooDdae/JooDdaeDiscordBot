@@ -8,7 +8,7 @@ export interface RecordInfo {
     delta: number;
     problem: number;
     time: number;
-    startDatetime: number;
+    startTime: number;
     query: string;
     timeout: number;
     rated: boolean;
@@ -20,7 +20,7 @@ const recordDict: Record<string, RecordInfo[]> = Object.create(null);
 
 
 // eslint-disable-next-line max-len
-export const newRecord = (matchType: string, challenger: UserInfo, challenged: UserInfo, result: number, delta: number, problem: number, time: number, startDatetime: number, query: string, timeout: number, rated: boolean): RecordInfo => ({
+export const newRecord = (matchType: string, challenger: UserInfo, challenged: UserInfo, result: number, delta: number, problem: number, time: number, startTime: number, query: string, timeout: number, rated: boolean): RecordInfo => ({
 	matchType,
 	challenger,
 	challenged,
@@ -28,15 +28,16 @@ export const newRecord = (matchType: string, challenger: UserInfo, challenged: U
 	delta,
 	problem,
 	time,
-	startDatetime,
+	startTime,
 	query,
 	timeout,
 	rated,
 });
 
 // eslint-disable-next-line max-len
-export const addRecord = (matchType: string, challenger: UserInfo, challenged: UserInfo, result: number, delta: number, problem: number, time: number, startDatetime: number, query: string, timeout: number, rated: boolean): void => {
-	const record = newRecord(matchType, challenger, challenged, result, delta, problem, time, startDatetime, query, timeout, rated);
+export const addRecord = (matchType: string, challenger: UserInfo, challenged: UserInfo, result: number, delta: number, problem: number, time: number, startTime: number, query: string, timeout: number, rated: boolean): void => {
+	// eslint-disable-next-line max-len
+	const record = newRecord(matchType, structuredClone(challenger), structuredClone(challenged), result, delta, problem, time, startTime, query, timeout, rated);
 	if (!recordDict[challenger.id]) recordDict[challenger.id] = [];
 	if (!recordDict[challenged.id]) recordDict[challenged.id] = [];
 	recordDict[challenger.id].push(record);

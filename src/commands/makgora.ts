@@ -6,7 +6,7 @@ import { getRandomProblems } from "../io/solvedac";
 import { saveMatchLog } from "../io/fileio";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
 import { OnCleanup, assert, colorDelta, eloDelta } from "../common";
-import { UserInfo, getBojId, getDiscordId, getUser } from "./user";
+import { UserInfo, getBojId, getBojUser, getDiscordId, getUser } from "./user";
 
 const usage = "`!막고라신청 <상대의 BOJ ID> <솔브드 쿼리> [t=3600] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
 		+ "`t`와 `r`은 비필수 옵션이며, 각각 `제한 시간(분 단위)`, `레이팅 적용 여부(0이면 미적용)`를 의미합니다. \n"
@@ -70,19 +70,22 @@ const resultMakgora = (
 };
 
 // eslint-disable-next-line max-len
-export const changeMakgoraRating = (user: UserInfo, target: UserInfo, result: -1 | 0 | 1, problemId: number, time: number, startDatetime: number, query: string, timeout: number, rated: boolean, logging: true | false = false) => {
+export const changeMakgoraRating = (user: string, target: string, result: -1 | 0 | 1, problemId: number, time: number, startTime: number, query: string, timeout: number, rated: boolean, logging: true | false = true) => {
 	if (logging)
-		saveMatchLog("makgora", user.bojId, target.bojId, result, problemId, time, startDatetime, query, timeout, rated);
+		saveMatchLog("makgora", user, target, result, problemId, time, startTime, query, timeout, rated);
+
+	const userUser = getBojUser(user);
+	const targetUser = getBojUser(target);
 
 	const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
-	const delta = eloDelta(user.rating, target.rating, eloResult);
+	const delta = eloDelta(userUser.rating, targetUser.rating, eloResult);
 
-	addRecord("makgora", user, target, result, delta, problemId, time, startDatetime, query, timeout, rated);
+	addRecord("makgora", userUser, targetUser, result, delta, problemId, time, startTime, query, timeout, rated);
 
-	user.rating += delta;
-	target.rating -= delta;
-	user.count[result] += 1;
-	target.count[-result as -1 | 0 | 1] += 1;
+	userUser.rating += delta;
+	targetUser.rating -= delta;
+	userUser.count[result] += 1;
+	targetUser.count[-result as -1 | 0 | 1] += 1;
 	return delta;
 };
 
@@ -211,7 +214,8 @@ export default {
 		// 결과 반영
 		const result = await Promise.race([tiePromise, winPromise]);
 
-		const delta = changeMakgoraRating(user, target, result, problemId, startTime, endTime, query, timeout, rated, true);
+		// eslint-disable-next-line max-len
+		const delta = changeMakgoraRating(userBojId, targetBojId, result, problemId, Date.now() - startTime, startTime, encodeURIComponent(query), timeout, rated, true);
 
 		startingMessage.reply(resultMakgora(userId, targetId, result, delta, user, target));
 	},
