@@ -12,7 +12,8 @@
     "prisma:format": "prisma format",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "postinstall": "prisma generate"
+    "prisma:push": "prisma db push",
+    "postinstall": "prisma:push"
   },
   "author": "JooDdae",
   "devDependencies": {
