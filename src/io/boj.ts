@@ -1,5 +1,9 @@
 import { JSDOM } from "jsdom";
 
+const BOJ_SHARE_URL1 = "https://www.acmicpc.net/source/share/";
+const BOJ_SHARE_URL2 = "http://boj.kr/";
+const BOJ_SHARAE_TOKEN = /^[0-9a-f]{32}$/;
+
 const headers = { "User-Agent": "JooDdae Bot" };
 
 export const getAcceptedSubmission = async(userId: string, problemId: string | number) => {
@@ -16,12 +20,20 @@ export const existBojId = async(bojId: string) => {
 	return res;
 };
 
-export const getSharedSource = async(sharedUrl: string | undefined) => {
-	if (sharedUrl === undefined || !sharedUrl.startsWith("http")) return undefined;
-	const res = await fetch(sharedUrl, { headers }).then((res) => res.text());
+export const getSharedSource = async(url: string) => {
+	if (url.startsWith(BOJ_SHARE_URL1)) url = url.slice(BOJ_SHARE_URL1.length);
+	else if (url.startsWith(BOJ_SHARE_URL2)) url = url.slice(BOJ_SHARE_URL2.length);
+	if (!BOJ_SHARAE_TOKEN.test(url)) return null;
+
+	url = BOJ_SHARE_URL1 + url;
+	const res = await fetch(url, { headers }).then((res) => res.text());
 	const doc = new JSDOM(res).window.document;
-	const input = doc.querySelector("div.form-group > div.col-md-12 > textarea:first-child")?.textContent?.split("\n")[0];
-	if (!input) return undefined;
-	const inputBojId = doc.querySelector("div.breadcrumbs > div.container:first-child")?.textContent?.split("\n")[3].trim();
-	return [inputBojId, input];
+
+	const bojId = doc.querySelector("div.breadcrumbs > div.container:first-child")?.textContent?.split("\n")[3].trim();
+	const content = doc.querySelector("div.form-group > div.col-md-12 > textarea:first-child")?.textContent?.split("\n")[0];
+	if (!bojId || !content) return null;
+	return {
+		bojId,
+		content,
+	};
 };
