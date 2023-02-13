@@ -58,6 +58,9 @@ export default {
 		const timer = setInterval(updateRemain, 1000);
 		onCleanup(() => clearInterval(timer));
 
+		let end = false;
+		onCleanup(() => (end = true));
+
 		await remainMessage.react("❌");
 		const cancelPromise = remainMessage.awaitReactions({
 			filter: ({ emoji: { name } }, { id }) => name === "❌" && id === author.id,
@@ -73,6 +76,7 @@ export default {
 					max: 1,
 					time: endTime - Date.now(),
 				});
+				if (end) break;
 				const sourceMessage = replyMessage.first();
 				// eslint-disable-next-line no-await-in-loop
 				const input = await getSharedSource(sourceMessage?.content);

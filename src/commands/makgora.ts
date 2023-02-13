@@ -184,6 +184,9 @@ export default {
 		const timer = setInterval(updateRemain, 1000);
 		onCleanup(() => clearInterval(timer));
 
+		let end = false;
+		onCleanup(() => (end = true));
+
 		await remainMessage.react("🛑");
 		const tiePromise = remainMessage.awaitReactions({
 			filter: ({ emoji: { name } }, { id }) => name === "🛑" && (id === targetId || id === userId),
@@ -199,6 +202,8 @@ export default {
 					max: 1,
 					time: endTime - Date.now(),
 				});
+				if (end) break;
+
 				// eslint-disable-next-line no-await-in-loop
 				const [userResult, targetResult] = await Promise.all([
 					getAcceptedSubmission(userBojId, problemId),
