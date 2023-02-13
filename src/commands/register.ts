@@ -4,13 +4,13 @@ import { randomBytes } from "crypto";
 
 import { REGISTER_TIMEOUT } from "../constants";
 import { OnCleanup, assert } from "../common";
-import { addUser, getUser, getUserByBojId } from "../io/db";
+import { User, addUser, getUser, getUserByBojId } from "../io/db";
 import { existBojId, getSharedSource } from "../io/boj";
 
 const usage = "`!등록 <BOJ ID>`으로 봇에 등록할 수 있습니다.";
 
-const userAlreadyRegistered = (id: string, userBojId: string) => (
-	`<@${id}>님은 \`${userBojId}\`로 이미 봇에 등록되어 있습니다.`
+const userAlreadyRegistered = (id: string, user: User) => (
+	`<@${id}>님은 \`${user.bojId}\`로 이미 봇에 등록되어 있습니다.`
 );
 
 const bojIdAlreadyRegistered = (bojId: string) => (
@@ -21,7 +21,13 @@ const notFound = (bojId: string) => (
 	`\`${bojId}\` 백준 아이디가 존재하지 않습니다.`
 );
 
+const invalidUrl = `잘못된 링크입니다. 다시 입력해주세요.`;
+
+const cancelled = `등록이 취소되었습니다.`;
+
 const remainTime = (remain: number) => `등록 제한시간: ${(remain / 60000).toFixed(0)}분`;
+
+const registerSuccess = (id: string, bojId: string) => `<@${id}>님이 \`${bojId}\`로 봇에 등록되었습니다.`;
 
 export default {
 	command: "등록",
@@ -35,7 +41,7 @@ export default {
 
 		{
 			const user = await getUser(id);
-			assert(user === null, userAlreadyRegistered, id, user!.bojId);
+			assert(user === null, userAlreadyRegistered, id, user!);
 		}
 		{
 			const user = await getUserByBojId(bojId);
@@ -44,8 +50,11 @@ export default {
 		assert(await existBojId(bojId), notFound, bojId);
 
 		const registerToken = `사랑해요 주때봇 ${randomBytes(16).toString("hex")}`;
-		const token = await message.channel.send(`\`${registerToken}\``);
-		const tokenMessage = await token.reply(`<@${id}>님, \`${bojId}\`로 봇에 등록하시려면 위 문구를 임의의 문제에 제출하고, 해당 코드를 공유한 주소를 입력해주세요.\n등록을 취소하려면 ❌ 이모지를 달아주세요.`);
+		const tokenMessage = await message.reply(
+			`\`\`\`${registerToken}\`\`\`\n`
+			+ `봇에 등록하시려면 위 문구를 임의의 문제에 제출하고, 해당 코드를 공유한 주소를 입력해주세요.\n`
+			+ `등록을 취소하려면 ❌ 이모지를 달아주세요.`,
+		);
 
 
 		// 병렬 실행
@@ -86,20 +95,20 @@ export default {
 				const input = await getSharedSource(sourceMessage?.content);
 				if (input !== undefined && input[0] === bojId && input[1] === registerToken) return true;
 				if (sourceMessage !== undefined)
-					sourceMessage.reply("잘못된 링크입니다. 다시 입력해주세요.");
+					sourceMessage.reply(invalidUrl);
 			}
 			return false;
 		})();
 
 		const result = await Promise.race([cancelPromise, registerPromise]);
 		if (!result) {
-			await tokenMessage.reply("등록이 취소되었습니다.");
+			await tokenMessage.reply(cancelled);
 			return;
 		}
 
 		// 등록
 
 		await addUser(id, bojId);
-		await tokenMessage.reply(`<@${id}>님이 \`${bojId}\`로 봇에 등록되었습니다.`);
+		await tokenMessage.reply(registerSuccess(id, bojId));
 	},
 };

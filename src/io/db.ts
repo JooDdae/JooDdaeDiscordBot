@@ -3,6 +3,7 @@ import { PrismaClient, User } from "@prisma/client";
 export type { Match, RatingRecord, User } from "@prisma/client";
 
 export const db = new PrismaClient();
+const activeSet = new Set<string>();
 
 export const TYPE_MAKGORA = 1;
 
@@ -31,11 +32,14 @@ export const getMatches = (id1: string, id2: string, skip = 0, take = 10) => db.
 	skip,
 	take,
 });
+export const getActive = (id: string) => activeSet.has(id);
 
-export const setActive = (ids: string[], active = true) => db.user.updateMany({
-	where: { id: { in: ids } },
-	data: { active },
-});
+export const setActive = (ids: string[], active = true) => {
+	for (const id of ids) {
+		if (active) activeSet.add(id);
+		else activeSet.delete(id);
+	}
+};
 
 
 export const addUser = (id: string, bojId: string) => db.user.create({

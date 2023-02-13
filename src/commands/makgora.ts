@@ -4,7 +4,7 @@ import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
 import { OnCleanup, assert, colorDelta, eloDelta } from "../common";
-import { User, addMakgora, getUser, getUserByBojId, setActive } from "../io/db";
+import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
 
 const usage = "`!막고라 <상대의 BOJ ID> <솔브드 쿼리> [t=60] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
 		+ "`t`와 `r`은 비필수 옵션이며, 각각 `제한 시간(분 단위)`, `레이팅 적용 여부(0이면 미적용)`를 의미합니다. \n"
@@ -21,6 +21,8 @@ const reactionTimedOut = `시간이 초과되었습니다.`;
 const cancelled = `취소되었습니다.`;
 
 const notFound = `조건에 맞는 문제가 없어 취소되었습니다.`;
+
+const noSolver = `둘 모두 풀지 못한 상태입니다.`;
 
 const notRegisteredUser = (userId: string) => (
 	`<@${userId}>님은 아직 봇에 등록하지 않았습니다. \`!등록 <백준 아이디>\` 명령어로 등록해주세요.`
@@ -111,8 +113,8 @@ export default {
 		assert(target !== null, notRegisteredTarget, targetBojId);
 		const targetId = target.id;
 
-		assert(!user.active, userAlreadyActive);
-		assert(!target.active, targetAlreadyActive);
+		assert(!getActive(userId), userAlreadyActive);
+		assert(!getActive(targetId), targetAlreadyActive);
 
 
 		// 사용자 반응 확인 및 문제 가져오기
@@ -186,7 +188,7 @@ export default {
 				]);
 				if (userResult < targetResult) return 1;
 				if (userResult > targetResult) return -1;
-				message.channel.send("둘 모두 풀지 못한 상태입니다.");
+				message.channel.send(noSolver);
 			}
 			return 0;
 		})();
