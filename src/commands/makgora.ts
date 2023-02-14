@@ -3,7 +3,7 @@ import { Message } from "discord.js";
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
-import { OnCleanup, assert, colorDelta, eloDelta } from "../common";
+import { OnCleanup, assert, colorDelta, eloDelta, transformPresetQuery } from "../common";
 import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
 
 const usage = "`!막고라 <상대의 BOJ ID> <솔브드 쿼리> [t=60] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
@@ -93,7 +93,8 @@ export default {
 					targetBojId = arg;
 					query = `-@${targetBojId} ${query}`;
 				} else {
-					query += ` ${arg}`;
+					// eslint-disable-next-line no-await-in-loop
+					query += ` ${await transformPresetQuery(userId, arg)}`;
 				}
 			} else {
 				const type = arg.slice(0, optionPos);

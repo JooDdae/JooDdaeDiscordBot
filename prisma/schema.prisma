@@ -20,6 +20,7 @@ model User {
   rated         Boolean        @default(false)
   history       Match[]
   ratingHistory RatingRecord[]
+  aliases       QueryAlias[]
 }
 
 model Match {
@@ -44,4 +45,13 @@ model RatingRecord {
   delta      Float
   user       User   @relation(fields: [userId], references: [id])
   match      Match  @relation(fields: [matchId], references: [id])
+}
+
+model QueryAlias {
+  userId String
+  alias  String
+  query  String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@id([userId, alias])
 }
