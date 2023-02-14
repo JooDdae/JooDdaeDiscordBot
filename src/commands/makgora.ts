@@ -61,7 +61,7 @@ const resultMakgora = (
 	let output = "";
 	if (result === 0) output += "막고라가 무승부로 끝났습니다.";
 	else output += `<@${result === 1 ? userId : targetId}>의 승리! 축하합니다!`;
-	output += " 레이팅 변화는 다음과 같습니다.\n";
+	output += ` <@${userId}>와 <@${targetId}>의 레이팅 변화는 다음과 같습니다.\n`;
 	output += "```ansi\n";
 	output += ratingChange(user.bojId, user.rating, delta);
 	output += ratingChange(target.bojId, target.rating, -delta);
