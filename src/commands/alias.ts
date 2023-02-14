@@ -1,5 +1,6 @@
 import { Message } from "discord.js";
 
+import { basePresets } from "../base-presets";
 import { addQueryAlias, deleteQueryAlias, getQueryAlias, getQueryAliases, getUser } from "../io/db";
 import { assert, transformPresetQuery } from "../common";
 
@@ -14,6 +15,10 @@ const usageList = "`!프리셋 목록`으로 봇에 등록된 프리셋을 확�
 
 const notRegisteredUser = (userId: string) => (
 	`<@${userId}>님은 아직 봇에 등록하지 않았습니다. \`!등록 <백준 아이디>\` 명령어로 등록해주세요.`
+);
+
+const isBasePreset = (alias: string, query: string) => (
+	`\`${alias}\`은 기본 프리셋으로 \`${query}\`가 설정되어 변경이 불가능합니다.`
 );
 
 
@@ -57,6 +62,8 @@ export default {
 		if (command === "추가") {
 			assert(args.length >= 3, usageAdd);
 			const alias = args[1];
+			assert(!basePresets[alias], isBasePreset(alias, basePresets[alias]));
+
 			let query = "";
 			for (const arg of args.slice(2)) {
 				// eslint-disable-next-line no-await-in-loop
@@ -74,6 +81,7 @@ export default {
 			const args = content.split(" ").slice(2);
 			assert(args.length === 1, usageDelete);
 			const alias = args[0];
+			assert(!basePresets[alias], isBasePreset(alias, basePresets[alias]));
 
 			const existQuery = await getQueryAlias(id, alias);
 			assert(existQuery !== null, aliasNotFound(alias));
