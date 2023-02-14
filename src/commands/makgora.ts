@@ -47,7 +47,7 @@ const startMakgora = (userId: string, targetId: string, titleKo: string, problem
 const remainTime = (remain: number) => `무승부로 강제 종료까지 남은 시간: ${(remain / 1000 / 60).toFixed(0)}분`;
 
 const ratingChange = (bojId: string, rating: number, delta: number) => (
-	`${bojId}: ${(rating - delta).toFixed(0)} ⇒ ${rating.toFixed(0)} (${colorDelta(delta)})\n`
+	`${bojId}: ${(rating).toFixed(0)} ⇒ ${(rating + delta).toFixed(0)} (${colorDelta(delta)})\n`
 );
 
 const resultMakgora = (
