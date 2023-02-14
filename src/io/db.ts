@@ -84,7 +84,7 @@ export const addMakgora = (
 					},
 					{
 						userId: target.id,
-						result,
+						result: -result,
 						prevRating: target.rating,
 						delta: -delta,
 					},
@@ -107,10 +107,10 @@ export const addMakgora = (
 	db.user.update({
 		where: { id: target.id },
 		data: {
-			rating: target.rating + delta,
-			winCount: target.winCount + Number(result === 1),
+			rating: target.rating - delta,
+			winCount: target.winCount + Number(result === -1),
 			tieCount: target.tieCount + Number(result === 0),
-			loseCount: target.loseCount + Number(result === -1),
+			loseCount: target.loseCount + Number(result === 1),
 			rated: target.rated || rated,
 		},
 	}),

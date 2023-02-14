@@ -84,18 +84,17 @@ export default {
 		const registerPromise = (async() => {
 			while (Date.now() < endTime) {
 				// eslint-disable-next-line no-await-in-loop
-				const replyMessage = await message.channel.awaitMessages({
+				const messages = await message.channel.awaitMessages({
 					filter: ({ content, author: { id } }) => content.startsWith("http") && id === author.id,
 					max: 1,
 					time: endTime - Date.now(),
 				});
-				if (end) break;
-				const sourceMessage = replyMessage.first();
+				const sourceMessage = messages.first();
+				if (end || sourceMessage === undefined) break;
 				// eslint-disable-next-line no-await-in-loop
-				const input = await getSharedSource(sourceMessage?.content);
-				if (input !== undefined && input[0] === bojId && input[1] === registerToken) return true;
-				if (sourceMessage !== undefined)
-					sourceMessage.reply(invalidUrl);
+				const source = await getSharedSource(sourceMessage.content);
+				if (source !== null && source.bojId === bojId && source.content === registerToken) return true;
+				sourceMessage.reply(invalidUrl);
 			}
 			return false;
 		})();

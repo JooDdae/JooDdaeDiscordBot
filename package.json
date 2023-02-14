@@ -2,11 +2,11 @@
   "name": "jooddae-bot",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --sourcemap --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=dist/index.js",
     "start": "run-s build node",
-    "node": "node dist/index.js",
+    "node": "NODE_OPTIONS=--enable-source-maps node dist/index.js",
     "prisma": "run-s prisma:format prisma:migrate prisma:generate",
     "studio": "prisma studio",
     "prisma:format": "prisma format",
