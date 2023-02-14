@@ -6,7 +6,7 @@ import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
 import { OnCleanup, assert, colorDelta, eloDelta, transformPresetQuery } from "../common";
 import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
 
-const usage = "`!막고라 <상대의 BOJ ID> <솔브드 쿼리> [t=60] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
+const usage = "`!막고라 <상대의 BOJ ID | @멘션> <솔브드 쿼리> [t=60] [r=1]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
 		+ "`t`와 `r`은 비필수 옵션이며, 각각 `제한 시간(분 단위)`, `레이팅 적용 여부(0이면 미적용)`를 의미합니다. \n"
 		+ "예시: `!막고라 kyo20111 *p5..1`, `!막고라 cgiosy *s lang:en t=30 r=false`\n";
 
