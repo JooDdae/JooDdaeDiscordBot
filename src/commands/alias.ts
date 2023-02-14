@@ -1,15 +1,17 @@
 import { Message } from "discord.js";
 
 import { basePresets } from "../base-presets";
-import { addQueryAlias, deleteQueryAlias, getQueryAlias, getQueryAliases, getUser } from "../io/db";
+import { addQueryAlias, deleteQueryAlias, editQueryAlias, getQueryAlias, getQueryAliases, getUser } from "../io/db";
 import { assert, transformPresetQuery } from "../common";
 
 const usage = "쿼리에 프리셋을 추가하여 입력에 사용할 수 있습니다. 등록된 프리셋은 남들과 공유하지 않습니다.\n"
-			+ "`!프리셋 추가`, `!프리셋 제거`, `!프리셋 목록`으로 각 기능의 자세한 설명을 볼 수 있습니다.";
+			+ "`!프리셋 추가`, `!프리셋 제거`, `!프리셋 변경`, `!프리셋 목록`으로 각 기능의 자세한 설명을 볼 수 있습니다.";
 
-const usageAdd = "`!프리셋 추가 <프리셋 이름> <query>`으로 봇에 프리셋을 추가할 수 있습니다.\n";
+const usageAdd = "`!프리셋 추가 <프리셋 이름> <query>`으로 프리셋을 추가할 수 있습니다.\n";
 
-const usageDelete = "`!프리셋 삭제 <프리셋 이름>`으로 봇에 프리셋을 삭제할 수 있습니다.";
+const usageDelete = "`!프리셋 삭제 <프리셋 이름>`으로 프리셋을 삭제할 수 있습니다.";
+
+const usageEdit = "`!프리셋 변경 <프리셋 이름> <query>`으로 추가된 프리셋을 변경할 수 있습니다.";
 
 const usageList = "`!프리셋 목록`으로 봇에 등록된 프리셋을 확인할 수 있습니다.";
 
@@ -45,6 +47,10 @@ const addSuccess = (alias: string, query: string) => (
 
 const deleteSuccess = (alias: string) => (
 	`프리셋 \`${alias}\`을 제거했습니다.`
+);
+
+const editSuccess = (alias: string, beforeQuery: string, query: string) => (
+	`프리셋 \`${alias}\`을 \`${beforeQuery}\`에서 \`${query}\`로 변경했습니다.`
 );
 
 export default {
@@ -88,6 +94,25 @@ export default {
 			await deleteQueryAlias(id, alias);
 
 			await message.reply(deleteSuccess(alias));
+		} else if (command === "변경") {
+			const args = content.split(" ").slice(2);
+			assert(args.length >= 2, usageEdit);
+			const alias = args[0];
+			assert(!basePresets[alias], isBasePreset(alias, basePresets[alias]));
+
+			const existQuery = await getQueryAlias(id, alias);
+			assert(existQuery !== null, aliasNotFound(alias));
+
+			let query = "";
+			for (const arg of args.slice(1)) {
+				// eslint-disable-next-line no-await-in-loop
+				query += `${query === "" ? "" : " "}${await transformPresetQuery(id, arg)}`;
+			}
+
+			const beforeQuery = existQuery.query;
+			await editQueryAlias(id, alias, query);
+
+			await message.reply(editSuccess(alias, beforeQuery, query));
 		} else if (command === "목록") {
 			const args = content.split(" ").slice(2);
 			assert(args.length === 0, usageList);

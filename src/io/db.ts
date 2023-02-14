@@ -141,3 +141,12 @@ export const deleteQueryAlias = (userId: string, alias: string) => db.queryAlias
 		},
 	},
 });
+export const editQueryAlias = (userId: string, alias: string, query: string) => db.queryAlias.update({
+	where: {
+		userId_alias: {
+			userId,
+			alias,
+		},
+	},
+	data: { query },
+});
