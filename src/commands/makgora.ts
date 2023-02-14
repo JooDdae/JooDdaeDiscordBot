@@ -29,7 +29,7 @@ const notRegisteredUser = (userId: string) => (
 );
 
 const notRegisteredTarget = (targetId: string) => (
-	`${targetId}님은 아직 봇에 등록하지 않았습니다. 봇에 등록된 사람에게만 막고라를 신청할 수 있습니다.`
+	`\`${targetId}\`님은 아직 봇에 등록하지 않았습니다. 봇에 등록된 사람에게만 막고라를 신청할 수 있습니다.`
 );
 
 const checkMakgora = (query: string, timeout: number, rated: boolean, targetId: string, targetBojId: string) => (
@@ -91,6 +91,11 @@ export default {
 			if (optionPos === -1) {
 				if (targetBojId === null) {
 					targetBojId = arg;
+					if (arg[0] === "<" && arg[1] === "@" && arg[arg.length - 1] === ">") {
+						// eslint-disable-next-line no-await-in-loop
+						const targetUser = await getUser(arg.slice(2, -1));
+						if (targetUser !== null) targetBojId = targetUser.bojId;
+					}
 					query = `-@${targetBojId} ${query}`;
 				} else {
 					// eslint-disable-next-line no-await-in-loop
