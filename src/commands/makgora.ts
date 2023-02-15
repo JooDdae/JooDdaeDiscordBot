@@ -3,7 +3,7 @@ import { Message } from "discord.js";
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
-import { OnCleanup, assert, colorDelta, eloDelta } from "../common";
+import { OnCleanup, assert, colorDelta, eloDelta, getReactions, getTwoStepCommands, sendTimer } from "../common";
 import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
 
 const usage = "`!막고라 <상대의 BOJ ID> <솔브드 쿼리> [t=60] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
@@ -82,14 +82,14 @@ export default {
 
 		const args = content.split(" ").slice(1);
 
-		let targetBojId: string | null = null;
+		let targetBojId = "";
 		let query = `-@${userBojId}`;
 		let timeout: number = DEFAULT_MAKGORA_TIMEOUT;
 		let rated = true;
 		for (const arg of args) {
 			const optionPos = arg.indexOf("=");
 			if (optionPos === -1) {
-				if (targetBojId === null) {
+				if (targetBojId === "") {
 					targetBojId = arg;
 					query = `-@${targetBojId} ${query}`;
 				} else {
@@ -106,7 +106,7 @@ export default {
 			}
 		}
 
-		assert(targetBojId !== null, usage);
+		assert(targetBojId !== "", usage);
 		assert(targetBojId !== userBojId, sameUser);
 
 		const target = await getUserByBojId(targetBojId);
@@ -126,13 +126,9 @@ export default {
 		await checkingMessage.react("✅");
 		await checkingMessage.react("❌");
 
-		const reactions = await checkingMessage.awaitReactions({
-			filter: ({ emoji: { name } }, { id }) => (
-				name === "✅" && id === targetId
-				|| name === "❌" && (id === targetId || id === userId)
-			),
-			max: 1,
-			time: REACTION_TIMEOUT,
+		const reactions = await getReactions(checkingMessage, REACTION_TIMEOUT, {
+			"✅": [targetId],
+			"❌": [userId, targetId],
 		});
 		const reaction = reactions.first();
 		checkingMessage.reactions.removeAll();
@@ -152,36 +148,21 @@ export default {
 		const startTime = Date.now();
 		const endTime = startTime + timeout;
 
-		const remainMessage = await message.channel.send(remainTime(endTime - Date.now()));
-		const updateRemain = () => {
-			const { content } = remainMessage;
-			const newContent = remainTime(endTime - Date.now());
-			if (content !== newContent) remainMessage.edit(newContent);
-		};
+		const timerMessage = await sendTimer(message, remainTime, endTime - Date.now(), onCleanup);
 
-		const timer = setInterval(updateRemain, 1000);
-		onCleanup(() => clearInterval(timer));
+		const tiePromise = getReactions(
+			timerMessage,
+			endTime - Date.now(),
+			{ "🛑": [userId, targetId] },
+			2,
+		).then(() => 0 as const);
 
-		let end = false;
-		onCleanup(() => (end = true));
-
-		await remainMessage.react("🛑");
-		const tiePromise = remainMessage.awaitReactions({
-			filter: ({ emoji: { name } }, { id }) => name === "🛑" && (id === targetId || id === userId),
-			maxUsers: 2,
-			time: endTime - Date.now(),
-		}).then(() => 0 as const);
-
-		const winPromise = (async() => {
-			while (Date.now() < endTime) {
-				// eslint-disable-next-line no-await-in-loop
-				await message.channel.awaitMessages({
-					filter: ({ content, author: { id } }) => content === "!컷" && (id === targetId || id === userId),
-					max: 1,
-					time: endTime - Date.now(),
-				});
-				if (end) break;
-				// eslint-disable-next-line no-await-in-loop
+		const winPromise = await getTwoStepCommands(
+			message,
+			endTime - Date.now(),
+			{ "!컷": [userId, targetId] },
+			onCleanup,
+			async() => {
 				const [userResult, targetResult] = await Promise.all([
 					getAcceptedSubmission(userBojId, problemId),
 					getAcceptedSubmission(targetBojId, problemId),
@@ -189,12 +170,12 @@ export default {
 				if (userResult < targetResult) return 1;
 				if (userResult > targetResult) return -1;
 				message.channel.send(noSolver);
-			}
-			return 0;
-		})();
+			},
+			0 as const,
+		);
 
 		// 결과 반영
-		const result = await Promise.race([tiePromise, winPromise]);
+		const result = await Promise.race([winPromise, tiePromise]);
 
 		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
 		const delta = eloDelta(user.rating, target.rating, eloResult);

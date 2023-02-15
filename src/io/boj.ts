@@ -6,7 +6,7 @@ const BOJ_SHARAE_TOKEN = /^[0-9a-f]{32}$/;
 
 const headers = { "User-Agent": "JooDdae Bot" };
 
-export const getAcceptedSubmission = async(userId: string, problemId: string | number) => {
+export const getAcceptedSubmission = async(userId: string, problemId: number) => {
 	const url = `https://www.acmicpc.net/status?problem_id=${problemId}&user_id=${userId}&result_id=4`;
 	const res = await fetch(url, { headers }).then((res) => res.text());
 	const doc = new JSDOM(res).window.document;

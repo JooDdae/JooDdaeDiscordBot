@@ -3,7 +3,7 @@ import { Message } from "discord.js";
 import { randomBytes } from "crypto";
 
 import { REGISTER_TIMEOUT } from "../constants";
-import { OnCleanup, assert } from "../common";
+import { OnCleanup, assert, getReactions, getTwoStepCommands, sendTimer } from "../common";
 import { User, addUser, getUser, getUserByBojId } from "../io/db";
 import { existBojId, getSharedSource } from "../io/boj";
 
@@ -61,43 +61,22 @@ export default {
 		const startTime = Date.now();
 		const endTime = startTime + REGISTER_TIMEOUT;
 
-		const remainMessage = await message.channel.send(remainTime(endTime - Date.now()));
-		const updateRemain = () => {
-			const { content } = remainMessage;
-			const newContent = remainTime(endTime - Date.now());
-			if (content !== newContent) remainMessage.edit(newContent);
-		};
+		const timerMessage = await sendTimer(message, remainTime, endTime - Date.now(), onCleanup);
 
-		const timer = setInterval(updateRemain, 1000);
-		onCleanup(() => clearInterval(timer));
+		const cancelPromise = getReactions(timerMessage, endTime - Date.now(), { "❌": [author.id] });
 
-		let end = false;
-		onCleanup(() => (end = true));
-
-		await remainMessage.react("❌");
-		const cancelPromise = remainMessage.awaitReactions({
-			filter: ({ emoji: { name } }, { id }) => name === "❌" && id === author.id,
-			max: 1,
-			time: endTime - Date.now(),
-		}).then(() => false);
-
-		const registerPromise = (async() => {
-			while (Date.now() < endTime) {
-				// eslint-disable-next-line no-await-in-loop
-				const messages = await message.channel.awaitMessages({
-					filter: ({ content, author: { id } }) => content.startsWith("http") && id === author.id,
-					max: 1,
-					time: endTime - Date.now(),
-				});
-				const sourceMessage = messages.first();
-				if (end || sourceMessage === undefined) break;
-				// eslint-disable-next-line no-await-in-loop
+		const registerPromise = getTwoStepCommands(
+			message,
+			endTime - Date.now(),
+			{ "http": [author.id] },
+			onCleanup,
+			async(sourceMessage) => {
 				const source = await getSharedSource(sourceMessage.content);
 				if (source !== null && source.bojId === bojId && source.content === registerToken) return true;
 				sourceMessage.reply(invalidUrl);
-			}
-			return false;
-		})();
+			},
+			false,
+		);
 
 		const result = await Promise.race([cancelPromise, registerPromise]);
 		if (!result) {
