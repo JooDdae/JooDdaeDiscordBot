@@ -14,7 +14,7 @@ const userAlreadyRegistered = (id: string, user: User) => (
 );
 
 const bojIdAlreadyRegistered = (bojId: string) => (
-	`\`${bojId}\`는 이미 봇에 등록된 BOJ ID입니다.`
+	`\`${bojId}\`는 이미 봇에 등록된 백준 아이디입니다.`
 );
 
 const notFound = (bojId: string) => (
@@ -45,7 +45,7 @@ export default {
 		}
 		{
 			const user = await getUserByBojId(bojId);
-			assert(user === null, bojIdAlreadyRegistered, id);
+			assert(user === null, bojIdAlreadyRegistered, bojId);
 		}
 		assert(await existBojId(bojId), notFound, bojId);
 
