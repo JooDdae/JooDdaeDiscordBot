@@ -62,4 +62,9 @@ export const basePresets: preset = {
 	"미적분학": "#calculus",
 	"스프라그그런디정리": "#sprague_grundy",
 	"그런디": "#sprague_grundy",
+
+	"한국어": "lang:ko",
+	"영어": "lang:en",
+	"일본어": "lang:ja",
+	"폴란드어": "lang:pl",
 };
