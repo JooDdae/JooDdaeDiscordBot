@@ -67,4 +67,6 @@ export const basePresets: preset = {
 	"영어": "lang:en",
 	"일본어": "lang:ja",
 	"폴란드어": "lang:pl",
+
+	"최근": "id:15000..",
 };

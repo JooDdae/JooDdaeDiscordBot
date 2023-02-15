@@ -41,7 +41,8 @@ const startMakgora = (userId: string, targetId: string, titleKo: string, problem
 	`# ${titleKo}: https://www.acmicpc.net/problem/${problemId}\n`
 	+ `<@${userId}>가 <@${targetId}>에게 신청한 막고라가 성사되었습니다. 막고라 중인 두 사람은 다음 명령어를 사용 가능합니다.\n`
 	+ "`!컷`: 문제를 둘 중 한 명 이상이 풀었는지 확인하고, 먼저 푼 쪽의 승리로 끝냅니다.\n"
-	+ "🛑: 둘 모두 무승부를 요청할 경우, 무승부로 끝냅니다."
+	+ "🛑: 둘 모두 무승부를 요청할 경우, 무승부로 끝냅니다.\n"
+	+ "🏳️: 항복을 요청할 경우, 상대방의 승리로 끝냅니다."
 );
 
 const remainTime = (remain: number) => `무승부로 강제 종료까지 남은 시간: ${(remain / 1000 / 60).toFixed(0)}분`;
@@ -172,11 +173,24 @@ export default {
 		onCleanup(() => (end = true));
 
 		await remainMessage.react("🛑");
+		await remainMessage.react("🏳️");
+
 		const tiePromise = remainMessage.awaitReactions({
 			filter: ({ emoji: { name } }, { id }) => name === "🛑" && (id === targetId || id === userId),
-			maxUsers: 2,
+			maxUsers: 1,
 			time: endTime - Date.now(),
 		}).then(() => 0 as const);
+
+		const userSurrenderPromise = remainMessage.awaitReactions({
+			filter: ({ emoji: { name } }, { id }) => name === "🏳️" && id === userId,
+			max: 1,
+			time: endTime - Date.now(),
+		}).then(() => -1 as const);
+		const targetSurrenderPromise = remainMessage.awaitReactions({
+			filter: ({ emoji: { name } }, { id }) => name === "🏳️" && id === targetId,
+			max: 1,
+			time: endTime - Date.now(),
+		}).then(() => 1 as const);
 
 		const winPromise = (async() => {
 			while (Date.now() < endTime) {
@@ -200,7 +214,7 @@ export default {
 		})();
 
 		// 결과 반영
-		const result = await Promise.race([tiePromise, winPromise]);
+		const result = await Promise.race([tiePromise, winPromise, userSurrenderPromise, targetSurrenderPromise]);
 
 		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
 		const delta = eloDelta(user.rating, target.rating, eloResult);
