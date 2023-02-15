@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -19,8 +16,8 @@ model User {
   loseCount     Int            @default(0)
   rated         Boolean        @default(false)
   history       Match[]
-  ratingHistory RatingRecord[]
   aliases       QueryAlias[]
+  ratingHistory RatingRecord[]
 }
 
 model Match {
@@ -32,8 +29,8 @@ model Match {
   rated        Boolean
   timeout      Int
   ext          String
-  participants RatingRecord[]
   author       User           @relation(fields: [authorId], references: [id])
+  participants RatingRecord[]
 }
 
 model RatingRecord {
@@ -43,8 +40,8 @@ model RatingRecord {
   result     Int
   prevRating Float
   delta      Float
-  user       User   @relation(fields: [userId], references: [id])
   match      Match  @relation(fields: [matchId], references: [id])
+  user       User   @relation(fields: [userId], references: [id])
 }
 
 model QueryAlias {

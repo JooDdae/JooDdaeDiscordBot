@@ -6,7 +6,6 @@ CREATE TABLE "User" (
     "winCount" INTEGER NOT NULL DEFAULT 0,
     "tieCount" INTEGER NOT NULL DEFAULT 0,
     "loseCount" INTEGER NOT NULL DEFAULT 0,
-    "active" BOOLEAN NOT NULL DEFAULT false,
     "rated" BOOLEAN NOT NULL DEFAULT false
 );
 
@@ -31,9 +30,20 @@ CREATE TABLE "RatingRecord" (
     "result" INTEGER NOT NULL,
     "prevRating" REAL NOT NULL,
     "delta" REAL NOT NULL,
-    CONSTRAINT "RatingRecord_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "RatingRecord_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "RatingRecord_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "RatingRecord_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "QueryAlias" (
+    "userId" TEXT NOT NULL,
+    "alias" TEXT NOT NULL,
+    "query" TEXT NOT NULL,
+
+    PRIMARY KEY ("userId", "alias"),
+    CONSTRAINT "QueryAlias_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_bojId_key" ON "User"("bojId");
+
