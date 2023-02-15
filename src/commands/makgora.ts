@@ -3,12 +3,12 @@ import { Message } from "discord.js";
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
-import { OnCleanup, assert, colorDelta, eloDelta, getReactions, getTwoStepCommands, sendTimer } from "../common";
+import { OnCleanup, assert, colorDelta, eloDelta, getReactions, getTwoStepCommands, sendTimer, transformPresetQuery } from "../common";
 import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
 
-const usage = "`!막고라 <상대의 BOJ ID> <솔브드 쿼리> [t=60] [r=0]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
+const usage = "`!막고라 <상대의 BOJ ID | @멘션> <솔브드 쿼리> [t=60] [r=1]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
 		+ "`t`와 `r`은 비필수 옵션이며, 각각 `제한 시간(분 단위)`, `레이팅 적용 여부(0이면 미적용)`를 의미합니다. \n"
-		+ "예시: `!막고라 kyo20111 *p5..1`, `!막고라 cgiosy *s lang:en t=30 r=false`\n";
+		+ "예시: `!막고라 kyo20111 *p5..1`, `!막고라 cgiosy *s lang:en t=30 r=false`, `!막고라 @주때`\n";
 
 const sameUser = `자기 자신에게 막고라를 신청할 수 없습니다.`;
 
@@ -29,7 +29,7 @@ const notRegisteredUser = (userId: string) => (
 );
 
 const notRegisteredTarget = (targetId: string) => (
-	`${targetId}님은 아직 봇에 등록하지 않았습니다. 봇에 등록된 사람에게만 막고라를 신청할 수 있습니다.`
+	`\`${targetId}\`님은 아직 봇에 등록하지 않았습니다. 봇에 등록된 사람에게만 막고라를 신청할 수 있습니다.`
 );
 
 const checkMakgora = (query: string, timeout: number, rated: boolean, targetId: string, targetBojId: string) => (
@@ -41,13 +41,14 @@ const startMakgora = (userId: string, targetId: string, titleKo: string, problem
 	`# ${titleKo}: https://www.acmicpc.net/problem/${problemId}\n`
 	+ `<@${userId}>가 <@${targetId}>에게 신청한 막고라가 성사되었습니다. 막고라 중인 두 사람은 다음 명령어를 사용 가능합니다.\n`
 	+ "`!컷`: 문제를 둘 중 한 명 이상이 풀었는지 확인하고, 먼저 푼 쪽의 승리로 끝냅니다.\n"
-	+ "🛑: 둘 모두 무승부를 요청할 경우, 무승부로 끝냅니다."
+	+ "🛑: 둘 모두 무승부를 요청할 경우, 무승부로 끝냅니다.\n"
+	+ "🏳️: 항복을 요청할 경우, 상대방의 승리로 끝냅니다."
 );
 
 const remainTime = (remain: number) => `무승부로 강제 종료까지 남은 시간: ${(remain / 1000 / 60).toFixed(0)}분`;
 
 const ratingChange = (bojId: string, rating: number, delta: number) => (
-	`${bojId}: ${(rating - delta).toFixed(0)} ⇒ ${rating.toFixed(0)} (${colorDelta(delta)})\n`
+	`${bojId}: ${(rating).toFixed(0)} ⇒ ${(rating + delta).toFixed(0)} (${colorDelta(delta)})\n`
 );
 
 const resultMakgora = (
@@ -61,7 +62,7 @@ const resultMakgora = (
 	let output = "";
 	if (result === 0) output += "막고라가 무승부로 끝났습니다.";
 	else output += `<@${result === 1 ? userId : targetId}>의 승리! 축하합니다!`;
-	output += " 레이팅 변화는 다음과 같습니다.\n";
+	output += ` <@${userId}>와 <@${targetId}>의 레이팅 변화는 다음과 같습니다.\n`;
 	output += "```ansi\n";
 	output += ratingChange(user.bojId, user.rating, delta);
 	output += ratingChange(target.bojId, target.rating, -delta);
@@ -91,9 +92,15 @@ export default {
 			if (optionPos === -1) {
 				if (targetBojId === "") {
 					targetBojId = arg;
+					if (arg[0] === "<" && arg[1] === "@" && arg[arg.length - 1] === ">") {
+						// eslint-disable-next-line no-await-in-loop
+						const targetUser = await getUser(arg.slice(2, -1));
+						if (targetUser !== null) targetBojId = targetUser.bojId;
+					}
 					query = `-@${targetBojId} ${query}`;
 				} else {
-					query += ` ${arg}`;
+					// eslint-disable-next-line no-await-in-loop
+					query += ` ${await transformPresetQuery(userId, arg)}`;
 				}
 			} else {
 				const type = arg.slice(0, optionPos);
@@ -157,6 +164,18 @@ export default {
 			2,
 		).then(() => 0 as const);
 
+		const userSurrenderPromise = getReactions(
+			timerMessage,
+			endTime - Date.now(),
+			{ "🏳️": [userId] },
+		).then(() => -1 as const);
+
+		const targetSurrenderPromise = getReactions(
+			timerMessage,
+			endTime - Date.now(),
+			{ "🏳️": [targetId] },
+		).then(() => 1 as const);
+
 		const winPromise = await getTwoStepCommands(
 			message,
 			endTime - Date.now(),
@@ -175,7 +194,7 @@ export default {
 		);
 
 		// 결과 반영
-		const result = await Promise.race([winPromise, tiePromise]);
+		const result = await Promise.race([tiePromise, winPromise, userSurrenderPromise, targetSurrenderPromise]);
 
 		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
 		const delta = eloDelta(user.rating, target.rating, eloResult);

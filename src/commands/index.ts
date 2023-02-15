@@ -7,6 +7,7 @@ import makgora from "./makgora";
 import ranking from "./ranking";
 import register from "./register";
 import users from "./users";
+import alias from "./alias";
 
 export type Command = {
 	command: string;
@@ -21,5 +22,6 @@ commands.set(users.command, users);
 commands.set(ranking.command, ranking);
 commands.set(makgora.command, makgora);
 commands.set(register.command, register);
+commands.set(alias.command, alias);
 
 export default commands;

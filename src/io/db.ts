@@ -115,3 +115,38 @@ export const addMakgora = (
 		},
 	}),
 ]);
+
+
+export const addQueryAlias = (userId: string, alias: string, query: string) => db.queryAlias.create({
+	data: {
+		userId,
+		alias,
+		query,
+	},
+});
+export const getQueryAliases = (userId: string) => db.queryAlias.findMany({ where: { userId } });
+export const getQueryAlias = (userId: string, alias: string) => db.queryAlias.findUnique({
+	where: {
+		userId_alias: {
+			userId,
+			alias,
+		},
+	},
+});
+export const deleteQueryAlias = (userId: string, alias: string) => db.queryAlias.delete({
+	where: {
+		userId_alias: {
+			userId,
+			alias,
+		},
+	},
+});
+export const editQueryAlias = (userId: string, alias: string, query: string) => db.queryAlias.update({
+	where: {
+		userId_alias: {
+			userId,
+			alias,
+		},
+	},
+	data: { query },
+});
