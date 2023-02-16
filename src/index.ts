@@ -29,8 +29,11 @@ client.on(Events.MessageCreate, async(message) => {
 	const command = commands.get(commandType);
 	if (command === undefined) return;
 
-	const cleanups: Cleanup[] = [];
-	const onCleanup: OnCleanup = (cleanup) => cleanups.push(cleanup);
+	let cleanups: Cleanup[] | null = [];
+	const onCleanup: OnCleanup = (cleanup) => {
+		if (cleanups === null) cleanup();
+		else cleanups.push(cleanup);
+	};
 
 	try {
 		await command.execute(message, onCleanup);
@@ -49,6 +52,7 @@ client.on(Events.MessageCreate, async(message) => {
 	}
 
 	for (const cleanup of cleanups) cleanup();
+	cleanups = null;
 });
 
 client.login(DISCORD_TOKEN);
