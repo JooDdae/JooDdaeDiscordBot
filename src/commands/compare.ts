@@ -74,7 +74,7 @@ export default {
 			authorId,
 			// rated,
 			// timeout,
-			// ext,
+			ext,
 			participants,
 		} of matches) {
 			const leftIsAuthor = id === authorId;
@@ -95,7 +95,14 @@ export default {
 
 			output += `${colorType(leftResult)}\x1B[0m ${leftRating} ⇒ ${leftRating + leftDelta} (${colorDelta(leftDelta)}) `;
 			output += ` ${leftIsAuthor ? "=" : "<"}=💀=${leftIsAuthor ? ">" : "="} `;
-			output += ` ${colorType(rightResult)}\x1B[0m ${rightRating} ⇒ ${rightRating + rightDelta} (${colorDelta(rightDelta)})\n`;
+			output += ` ${colorType(rightResult)}\x1B[0m ${rightRating} ⇒ ${rightRating + rightDelta} (${colorDelta(rightDelta)}) `;
+
+			try {
+				const { problemId } = JSON.parse(ext);
+				output += `  [boj.kr/${problemId}]\n`;
+			} catch {
+				output += "\n";
+			}
 		}
 
 		await message.reply(
