@@ -3,8 +3,9 @@ import { Message } from "discord.js";
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
-import { OnCleanup, assert, colorDelta, eloDelta, getReactions, getTwoStepCommands, sendTimer, transformPresetQuery } from "../common";
+import { OnCleanup, assert, colorDelta, eloDelta, transformPresetQuery } from "../common";
 import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
+import { getCommands, messageFilter, reactionFilter, sendTimer } from "../common/discord";
 
 const usage = "`!막고라 <상대의 BOJ ID | @멘션> <솔브드 쿼리> [t=60] [r=1]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
 		+ "`t`와 `r`은 비필수 옵션이며, 각각 `제한 시간(분 단위)`, `레이팅 적용 여부(0이면 미적용)`를 의미합니다. \n"
@@ -133,10 +134,12 @@ export default {
 		await checkingMessage.react("✅");
 		await checkingMessage.react("❌");
 
-		const reactions = await getReactions(checkingMessage, REACTION_TIMEOUT, {
-			"✅": [targetId],
-			"❌": [userId, targetId],
-		});
+		const reactions = await getCommands(
+			checkingMessage,
+			REACTION_TIMEOUT,
+			reactionFilter("✅", [targetId]),
+			reactionFilter("❌", [userId, targetId]),
+		);
 		const reaction = reactions.first();
 		checkingMessage.reactions.removeAll();
 		assert(reaction !== undefined, reactionTimedOut);
@@ -157,31 +160,13 @@ export default {
 
 		const timerMessage = await sendTimer(message, remainTime, endTime - Date.now(), onCleanup);
 
-		const tiePromise = getReactions(
+		const result = await getCommands(
 			timerMessage,
 			endTime - Date.now(),
-			{ "🛑": [userId, targetId] },
-			2,
-		).then(() => 0 as const);
-
-		const userSurrenderPromise = getReactions(
-			timerMessage,
-			endTime - Date.now(),
-			{ "🏳️": [userId] },
-		).then(() => -1 as const);
-
-		const targetSurrenderPromise = getReactions(
-			timerMessage,
-			endTime - Date.now(),
-			{ "🏳️": [targetId] },
-		).then(() => 1 as const);
-
-		const winPromise = getTwoStepCommands(
-			message,
-			endTime - Date.now(),
-			{ "!컷": [userId, targetId] },
-			onCleanup,
-			async() => {
+			reactionFilter("🛑", [userId, targetId], 0 as const, 2),
+			reactionFilter("🏳️", [userId], -1 as const),
+			reactionFilter("🏳️", [targetId], 1 as const),
+			messageFilter("!컷", [userId, targetId], async() => {
 				const [userResult, targetResult] = await Promise.all([
 					getAcceptedSubmission(userBojId, problemId),
 					getAcceptedSubmission(targetBojId, problemId),
@@ -189,12 +174,10 @@ export default {
 				if (userResult < targetResult) return 1;
 				if (userResult > targetResult) return -1;
 				message.channel.send(noSolver);
-			},
-			0 as const,
+			}, 0 as const),
 		);
 
 		// 결과 반영
-		const result = await Promise.race([tiePromise, winPromise, userSurrenderPromise, targetSurrenderPromise]);
 		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
 		const delta = eloDelta(user.rating, target.rating, eloResult);
 

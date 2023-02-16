@@ -3,9 +3,10 @@ import { Message } from "discord.js";
 import { randomBytes } from "crypto";
 
 import { REGISTER_TIMEOUT } from "../constants";
-import { OnCleanup, assert, getReactions, getTwoStepCommands, sendTimer } from "../common";
+import { OnCleanup, assert } from "../common";
 import { User, addUser, getUser, getUserByBojId } from "../io/db";
 import { existBojId, getSharedSource } from "../io/boj";
+import { getCommands, messageFilter, reactionFilter, sendTimer } from "../common/discord";
 
 const usage = "`!등록 <BOJ ID>`으로 봇에 등록할 수 있습니다.";
 
@@ -63,24 +64,17 @@ export default {
 
 		const timerMessage = await sendTimer(message, remainTime, endTime - Date.now(), onCleanup);
 
-		const cancelPromise
-			= getReactions(timerMessage, endTime - Date.now(), { "❌": [author.id] })
-				.then(() => false);
-
-		const registerPromise = getTwoStepCommands(
-			message,
+		const result = await getCommands(
+			timerMessage,
 			endTime - Date.now(),
-			{ "http": [author.id] },
-			onCleanup,
-			async(sourceMessage) => {
+			reactionFilter("❌", [author.id], false),
+			messageFilter("http", [author.id], async(sourceMessage) => {
 				const source = await getSharedSource(sourceMessage.content);
 				if (source !== null && source.bojId === bojId && source.content === registerToken) return true;
 				sourceMessage.reply(invalidUrl);
-			},
-			false,
+			}, false),
 		);
 
-		const result = await Promise.race([cancelPromise, registerPromise]);
 		if (!result) {
 			await tokenMessage.reply(cancelled);
 			return;
