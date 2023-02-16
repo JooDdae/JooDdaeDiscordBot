@@ -4,10 +4,10 @@ import { OnCleanup } from "../common";
 import compare from "./compare";
 import help from "./help";
 import makgora from "./makgora";
+import presets from "./presets";
 import ranking from "./ranking";
 import register from "./register";
 import users from "./users";
-import alias from "./alias";
 
 export type Command = {
 	command: string;
@@ -22,6 +22,6 @@ commands.set(users.command, users);
 commands.set(ranking.command, ranking);
 commands.set(makgora.command, makgora);
 commands.set(register.command, register);
-commands.set(alias.command, alias);
+commands.set(presets.command, presets);
 
 export default commands;
