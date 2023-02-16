@@ -21,6 +21,8 @@ export const getReactions = async(
 		time,
 	});
 
+	await message.reactions.removeAll();
+
 	return reactions;
 };
 
@@ -54,7 +56,7 @@ export const getTwoStepCommands = async<T, U = void>(
 	let end = false;
 	onCleanup(() => (end = true));
 	const endTime = Date.now() + time;
-	while (Date.now() < endTime && end) {
+	while (Date.now() < endTime && !end) {
 		// eslint-disable-next-line no-await-in-loop
 		const command = (await getCommands(message, endTime - Date.now(), commands)).first();
 		if (command === undefined || end) break;

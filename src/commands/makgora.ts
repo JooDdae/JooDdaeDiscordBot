@@ -176,7 +176,7 @@ export default {
 			{ "🏳️": [targetId] },
 		).then(() => 1 as const);
 
-		const winPromise = await getTwoStepCommands(
+		const winPromise = getTwoStepCommands(
 			message,
 			endTime - Date.now(),
 			{ "!컷": [userId, targetId] },
@@ -195,7 +195,6 @@ export default {
 
 		// 결과 반영
 		const result = await Promise.race([tiePromise, winPromise, userSurrenderPromise, targetSurrenderPromise]);
-
 		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
 		const delta = eloDelta(user.rating, target.rating, eloResult);
 

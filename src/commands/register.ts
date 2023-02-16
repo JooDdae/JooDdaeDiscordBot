@@ -63,7 +63,9 @@ export default {
 
 		const timerMessage = await sendTimer(message, remainTime, endTime - Date.now(), onCleanup);
 
-		const cancelPromise = getReactions(timerMessage, endTime - Date.now(), { "❌": [author.id] });
+		const cancelPromise
+			= getReactions(timerMessage, endTime - Date.now(), { "❌": [author.id] })
+				.then(() => false);
 
 		const registerPromise = getTwoStepCommands(
 			message,
