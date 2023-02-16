@@ -94,7 +94,7 @@ export default {
 			tieCount += Number(leftResult === 0);
 
 			output += `${colorType(leftResult)}\x1B[0m ${leftRating} ⇒ ${leftRating + leftDelta} (${colorDelta(leftDelta)}) `;
-			output += `${leftIsAuthor ? "=" : "<"}=💀=${leftIsAuthor ? ">" : "="}`;
+			output += ` ${leftIsAuthor ? "=" : "<"}=💀=${leftIsAuthor ? ">" : "="} `;
 			output += ` ${colorType(rightResult)}\x1B[0m ${rightRating} ⇒ ${rightRating + rightDelta} (${colorDelta(rightDelta)})\n`;
 		}
 
