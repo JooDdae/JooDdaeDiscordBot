@@ -5,7 +5,7 @@ import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
 import { OnCleanup, assert, colorDelta, eloDelta, transformPresetQuery } from "../common";
 import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
-import { getCommands, messageFilter, reactionFilter, sendTimer } from "../common/discord";
+import { getCommands, messageFilter, reactionFilter, sendTimer } from "../io/discord";
 
 const usage = "`!막고라 <상대의 BOJ ID | @멘션> <솔브드 쿼리> [t=60] [r=1]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
 		+ "`t`와 `r`은 비필수 옵션이며, 각각 `제한 시간(분 단위)`, `레이팅 적용 여부(0이면 미적용)`를 의미합니다. \n"

@@ -6,7 +6,7 @@ import { REGISTER_TIMEOUT } from "../constants";
 import { OnCleanup, assert } from "../common";
 import { User, addUser, getUser, getUserByBojId } from "../io/db";
 import { existBojId, getSharedSource } from "../io/boj";
-import { getCommands, messageFilter, reactionFilter, sendTimer } from "../common/discord";
+import { getCommands, messageFilter, reactionFilter, sendTimer } from "../io/discord";
 
 const usage = "`!등록 <BOJ ID>`으로 봇에 등록할 수 있습니다.";
 
