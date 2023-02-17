@@ -1,6 +1,6 @@
 import { PrismaClient, User } from "@prisma/client";
 
-export type { Match, RatingRecord, User } from "@prisma/client";
+export type { Match, RatingRecord, User, QueryPreset } from "@prisma/client";
 
 export const db = new PrismaClient();
 const activeSet = new Set<string>();
@@ -117,35 +117,35 @@ export const addMakgora = (
 ]);
 
 
-export const addQueryAlias = (userId: string, alias: string, query: string) => db.queryAlias.create({
+export const addQueryPreset = (userId: string, name: string, query: string) => db.queryPreset.create({
 	data: {
 		userId,
-		alias,
+		name,
 		query,
 	},
 });
-export const getQueryAliases = (userId: string) => db.queryAlias.findMany({ where: { userId } });
-export const getQueryAlias = (userId: string, alias: string) => db.queryAlias.findUnique({
+export const getQueryPresets = (userId: string) => db.queryPreset.findMany({ where: { userId } });
+export const getQueryPreset = (userId: string, name: string) => db.queryPreset.findUnique({
 	where: {
-		userId_alias: {
+		userId_name: {
 			userId,
-			alias,
+			name,
 		},
 	},
 });
-export const deleteQueryAlias = (userId: string, alias: string) => db.queryAlias.delete({
+export const deleteQueryPreset = (userId: string, name: string) => db.queryPreset.delete({
 	where: {
-		userId_alias: {
+		userId_name: {
 			userId,
-			alias,
+			name,
 		},
 	},
 });
-export const editQueryAlias = (userId: string, alias: string, query: string) => db.queryAlias.update({
+export const editQueryPreset = (userId: string, name: string, query: string) => db.queryPreset.update({
 	where: {
-		userId_alias: {
+		userId_name: {
 			userId,
-			alias,
+			name,
 		},
 	},
 	data: { query },

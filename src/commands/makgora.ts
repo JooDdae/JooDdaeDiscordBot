@@ -3,7 +3,7 @@ import { Message } from "discord.js";
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
-import { OnCleanup, assert, colorDelta, eloDelta, transformPresetQuery } from "../common";
+import { OnCleanup, assert, colorDelta, eloDelta, transformQueryPreset } from "../common";
 import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
 import { getCommands, messageFilter, reactionFilter, sendTimer } from "../io/discord";
 
@@ -101,7 +101,7 @@ export default {
 					query = `-@${targetBojId} ${query}`;
 				} else {
 					// eslint-disable-next-line no-await-in-loop
-					query += ` ${await transformPresetQuery(userId, arg)}`;
+					query += ` ${await transformQueryPreset(userId, arg)}`;
 				}
 			} else {
 				const type = arg.slice(0, optionPos);

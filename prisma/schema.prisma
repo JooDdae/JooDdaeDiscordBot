@@ -16,7 +16,7 @@ model User {
   loseCount     Int            @default(0)
   rated         Boolean        @default(false)
   history       Match[]
-  aliases       QueryAlias[]
+  aliases       QueryPreset[]
   ratingHistory RatingRecord[]
 }
 
@@ -44,11 +44,11 @@ model RatingRecord {
   user       User   @relation(fields: [userId], references: [id])
 }
 
-model QueryAlias {
+model QueryPreset {
   userId String
-  alias  String
+  name   String
   query  String
   user   User   @relation(fields: [userId], references: [id])
 
-  @@id([userId, alias])
+  @@id([userId, name])
 }
