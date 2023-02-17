@@ -1,15 +1,23 @@
 import { Message } from "discord.js";
 
 import { basePresets } from "../base-presets";
-import { QueryPreset, addQueryPreset, deleteQueryPreset, editQueryPreset, getQueryPreset, getQueryPresets, getUser } from "../io/db";
-import { assert, transformQueryPreset } from "../common";
+import {
+	QueryPreset,
+	addQueryPreset,
+	deleteQueryPreset,
+	editQueryPreset,
+	getQueryPreset,
+	getQueryPresets,
+	getUser,
+} from "../io/db";
+import { assert, transformQueries } from "../common";
 
 const usage = "쿼리에 프리셋을 추가하여 입력에 사용할 수 있습니다. 등록된 프리셋은 남들과 공유하지 않습니다.\n"
 			+ "`!프리셋 추가`, `!프리셋 제거`, `!프리셋 변경`, `!프리셋 목록`으로 각 기능의 자세한 설명을 볼 수 있습니다.";
 
 const usageAdd = "`!프리셋 추가 <프리셋 이름> <쿼리>`로 프리셋을 추가할 수 있습니다.\n";
 
-const usageDelete = "`!프리셋 삭제 <프리셋 이름>`으로 프리셋을 삭제할 수 있습니다.";
+const usageDelete = "`!프리셋 제거 <프리셋 이름>`으로 프리셋을 제거할 수 있습니다.";
 
 const usageEdit = "`!프리셋 변경 <프리셋 이름> <쿼리>`로 추가된 프리셋을 변경할 수 있습니다.";
 
@@ -74,14 +82,9 @@ export default {
 			assert(!(presetName in basePresets), isBasePreset(presetName));
 			assert(ALPHABET_HANGUL_REGEX.test(presetName), invalidPreset);
 
-			let query = "";
-			for (const arg of args.slice(2)) {
-				// eslint-disable-next-line no-await-in-loop
-				query += `${query === "" ? "" : " "}${await transformQueryPreset(id, arg)}`;
-			}
-
+			const query = (await transformQueries(id, args.slice(2))).join(" ");
 			const preset = await getQueryPreset(id, presetName);
-			assert(preset === null, presetAlreadyExist(presetName, preset!));
+			assert(preset === null, presetAlreadyExist, presetName, preset!);
 
 			await addQueryPreset(id, presetName, query);
 			await message.reply(addSuccess(presetName, query));
@@ -106,12 +109,7 @@ export default {
 			assert(preset !== null, presetNotFound(presetName));
 			const { query: prevQuery } = preset;
 
-			let newQuery = "";
-			for (const arg of args.slice(2)) {
-				// eslint-disable-next-line no-await-in-loop
-				newQuery += `${newQuery === "" ? "" : " "}${await transformQueryPreset(id, arg)}`;
-			}
-
+			const newQuery = (await transformQueries(id, args.slice(2))).join(" ");
 			await editQueryPreset(id, presetName, newQuery);
 			await message.reply(editSuccess(presetName, prevQuery, newQuery));
 		} else if (command === "목록") {

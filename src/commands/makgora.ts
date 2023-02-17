@@ -1,10 +1,11 @@
+/* eslint-disable no-await-in-loop */
 import { Message } from "discord.js";
 
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
-import { OnCleanup, assert, colorDelta, eloDelta, transformQueryPreset } from "../common";
-import { User, addMakgora, getActive, getUser, getUserByBojId, setActive } from "../io/db";
+import { OnCleanup, assert, colorDelta, eloDelta, transformQuery } from "../common";
+import { User, addMakgora, getActive, getPresetQueryTable, getUser, getUserByBojId, setActive } from "../io/db";
 import { getCommands, messageFilter, reactionFilter, sendTimer } from "../io/discord";
 
 const usage = "`!막고라 <상대의 BOJ ID | @멘션> <솔브드 쿼리> [t=60] [r=1]` 으로 상대방에게 막고라를 신청할 수 있습니다.\n"
@@ -84,6 +85,8 @@ export default {
 
 		const args = content.split(" ").slice(1);
 
+		const presetQueries = await getPresetQueryTable(userId);
+
 		let targetBojId = "";
 		let query = `-@${userBojId}`;
 		let timeout: number = DEFAULT_MAKGORA_TIMEOUT;
@@ -94,14 +97,12 @@ export default {
 				if (targetBojId === "") {
 					targetBojId = arg;
 					if (arg[0] === "<" && arg[1] === "@" && arg[arg.length - 1] === ">") {
-						// eslint-disable-next-line no-await-in-loop
 						const targetUser = await getUser(arg.slice(2, -1));
 						if (targetUser !== null) targetBojId = targetUser.bojId;
 					}
 					query = `-@${targetBojId} ${query}`;
 				} else {
-					// eslint-disable-next-line no-await-in-loop
-					query += ` ${await transformQueryPreset(userId, arg)}`;
+					query += ` ${transformQuery(arg, presetQueries)}`;
 				}
 			} else {
 				const type = arg.slice(0, optionPos);

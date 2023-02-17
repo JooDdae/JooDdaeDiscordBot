@@ -150,3 +150,8 @@ export const editQueryPreset = (userId: string, name: string, query: string) => 
 	},
 	data: { query },
 });
+export const getPresetQueryTable = async(userId: string) => {
+	const presetQueryTable: Record<string, string> = Object.create(null);
+	for (const { name, query } of await getQueryPresets(userId)) presetQueryTable[name] = query;
+	return presetQueryTable;
+};
