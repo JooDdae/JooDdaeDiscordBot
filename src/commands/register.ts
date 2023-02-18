@@ -3,9 +3,10 @@ import { Message } from "discord.js";
 import { randomBytes } from "crypto";
 
 import { REGISTER_TIMEOUT } from "../constants";
+import { getSharedSource } from "../io/boj";
+import { getSolvedacUser } from "../io/solvedac";
 import { OnCleanup, assert } from "../common";
 import { User, addUser, getUser, getUserByBojId } from "../io/db";
-import { existBojId, getSharedSource } from "../io/boj";
 import { getCommands, messageFilter, reactionFilter, sendTimer } from "../io/discord";
 
 const usage = "`!등록 <BOJ ID>`으로 봇에 등록할 수 있습니다.";
@@ -19,7 +20,7 @@ const bojIdAlreadyRegistered = (bojId: string) => (
 );
 
 const notFound = (bojId: string) => (
-	`\`${bojId}\` 백준 아이디가 존재하지 않습니다.`
+	`\`${bojId}\` 백준 아이디가 존재하지 않거나, solved.ac에 등록되어 있지 않습니다.`
 );
 
 const invalidUrl = `잘못된 링크입니다. 다시 입력해주세요.`;
@@ -48,7 +49,7 @@ export default {
 			const user = await getUserByBojId(bojId);
 			assert(user === null, bojIdAlreadyRegistered, bojId);
 		}
-		assert(await existBojId(bojId), notFound, bojId);
+		assert(await getSolvedacUser(bojId), notFound, bojId);
 
 		const registerToken = `사랑해요 주때봇 ${randomBytes(16).toString("hex")}`;
 		const tokenMessage = await message.reply(
@@ -70,7 +71,7 @@ export default {
 			reactionFilter("❌", [author.id], false),
 			messageFilter("http", [author.id], async(sourceMessage) => {
 				const source = await getSharedSource(sourceMessage.content);
-				if (source !== null && source.bojId === bojId && source.content === registerToken) return true;
+				if (source !== null && source.id === bojId && source.content === registerToken) return true;
 				sourceMessage.reply(invalidUrl);
 			}, false),
 		);
