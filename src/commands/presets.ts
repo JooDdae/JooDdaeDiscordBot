@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 
-import { basePresets } from "../base-presets";
+import { basePresets } from "../constants/base-presets";
 import {
 	QueryPreset,
 	addQueryPreset,
