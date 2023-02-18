@@ -3,11 +3,14 @@ import { JSDOM } from "jsdom";
 const SHARE_URL1 = "https://www.acmicpc.net/source/share/";
 const SHARE_URL2 = "http://boj.kr/";
 const SHARE_TOKEN = /^[0-9a-f]{32}$/;
+const ID = /^[0-9a-z_]{3,20}$/;
 
 const headers = { "User-Agent": "JooDdae Bot" };
 
-export const getAcceptedSubmission = async(userId: string, problemId: number) => {
-	const url = `https://www.acmicpc.net/status?problem_id=${problemId}&user_id=${userId}&result_id=4`;
+export const getAcceptedSubmission = async(bojId: string, problemId: number) => {
+	if (!ID.test(bojId)) return false;
+	if (!(Number.isInteger(problemId) && 1000 <= problemId && problemId <= 99999)) return false;
+	const url = `https://www.acmicpc.net/status?problem_id=${problemId}&user_id=${bojId}&result_id=4`;
 	const res = await fetch(url, { headers }).then((res) => res.text());
 	const doc = new JSDOM(res).window.document;
 	const time = doc.querySelector("tbody > tr:last-child > td:first-child")?.textContent;
@@ -15,9 +18,10 @@ export const getAcceptedSubmission = async(userId: string, problemId: number) =>
 };
 
 export const existBojId = async(bojId: string) => {
+	if (!ID.test(bojId)) return false;
 	const url = `https://www.acmicpc.net/user/${bojId}`;
-	const res = await fetch(url, { headers }).then((res) => res.status === 200);
-	return res;
+	const res = await fetch(url, { headers });
+	return res.status === 200;
 };
 
 export const getSharedSource = async(url: string) => {
