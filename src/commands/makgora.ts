@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 import { Message } from "discord.js";
 
 import { getAcceptedSubmission } from "../io/boj";
@@ -97,6 +96,7 @@ export default {
 				if (targetBojId === "") {
 					targetBojId = arg;
 					if (arg[0] === "<" && arg[1] === "@" && arg[arg.length - 1] === ">") {
+						// eslint-disable-next-line no-await-in-loop
 						const targetUser = await getUser(arg.slice(2, -1));
 						if (targetUser !== null) targetBojId = targetUser.bojId;
 					}
@@ -154,7 +154,6 @@ export default {
 
 
 		// 막고라 시작
-		// 남은 시간 업데이트, 무승부 확인, 컷 확인을 병렬로 실행
 
 		const startTime = Date.now();
 		const endTime = startTime + timeout;
