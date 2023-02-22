@@ -90,7 +90,7 @@ export const getCommands = async<T extends Command<unknown, unknown>[]>(
 				maxUsers,
 				time,
 			});
-			promises.push(reactionPromise.then(then));
+			promises.push(reactionPromise.then((messages) => then(messages.clone())));
 		} else if (command.type === "message") {
 			const { prefix, ids, then, fallback } = command;
 
