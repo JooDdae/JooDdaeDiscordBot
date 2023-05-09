@@ -42,11 +42,11 @@ export const setActive = (ids: string[], active = true) => {
 };
 
 
-export const addUser = (id: string, bojId: string) => db.user.create({
+export const addUser = (id: string, bojId: string, rating: number) => db.user.create({
 	data: {
 		id,
 		bojId,
-		rating: 1500,
+		rating,
 	},
 });
 export const addMakgora = (

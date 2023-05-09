@@ -13,7 +13,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "update:ratingv2": "esbuild scripts/ratingv2.ts --bundle --sourcemap --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=dist/ratingv2.js; cross-env NODE_OPTIONS=--enable-source-maps node dist/ratingv2.js"
   },
   "author": "JooDdae",
   "devDependencies": {

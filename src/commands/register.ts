@@ -49,7 +49,8 @@ export default {
 			const user = await getUserByBojId(bojId);
 			assert(user === null, bojIdAlreadyRegistered, bojId);
 		}
-		assert(await getSolvedacUser(bojId), notFound, bojId);
+		const user = await getSolvedacUser(bojId);
+		assert(user, notFound, bojId);
 
 		const registerToken = `사랑해요 주때봇 ${randomBytes(16).toString("hex")}`;
 		const tokenMessage = await message.reply(
@@ -82,8 +83,7 @@ export default {
 		}
 
 		// 등록
-
-		await addUser(id, bojId);
+		await addUser(id, bojId, 1000 + (user.ratingByProblemsSum >> 1));
 		await tokenMessage.reply(registerSuccess(id, bojId));
 	},
 };
