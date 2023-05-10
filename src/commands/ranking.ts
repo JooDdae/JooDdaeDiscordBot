@@ -24,7 +24,7 @@ export default {
 		for (const { rating, bojId, winCount, tieCount, loseCount } of ranking) {
 			if (rating !== prevRating) rank = index;
 			if (rating !== topRating) output += `\x1B[0m`;
-			output += `${rank} ${bojId.padEnd(15)} ${pad(rating)} ${pad(winCount)}승 ${pad(tieCount)}무 ${pad(loseCount)}패\n`;
+			output += `${pad(rank, 2)} ${bojId.padEnd(15)} ${pad(rating)} ${pad(winCount)}승 ${pad(tieCount)}무 ${pad(loseCount)}패\n`;
 			prevRating = rating;
 			index += 1;
 		}
