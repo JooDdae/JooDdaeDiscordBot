@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Message } from "discord.js";
 
-import { assert, colorDelta, padCenter } from "../common";
+import { assert, colorDelta, maxPadding, padCenter } from "../common";
 import { getMatches, getUser, getUserByBojId } from "../io/db";
 
 const usage = "`!상대전적 <상대의 BOJ ID>` 혹은 `!상대전적 <BOJ ID1> <BOJ ID2>` 로 상대전적을 확인할 수 있습니다.\n";
@@ -60,10 +60,11 @@ export default {
 
 		const id = leftUser.id;
 		const targetId = rightUser.id;
-		const matches = await getMatches(id, rightUser.id);
+		const matches = await getMatches2(id, rightUser.id);
 		assert(matches.length > 0, notFound, leftUser.bojId, rightUser.bojId);
 
 		const lineLength = 50;
+		const [paddingL, paddingR] = maxPadding(matches.map(({ participants }) => participants), id);
 		let output = "";
 		let winCount = 0;
 		let loseCount = 0;
@@ -93,13 +94,13 @@ export default {
 			loseCount += Number(rightResult === 1);
 			tieCount += Number(leftResult === 0);
 
-			output += `${colorType(leftResult)}\x1B[0m ${leftRating.toFixed(0)} ⇒ ${leftNewRating.toFixed(0)} (${colorDelta(leftNewRating - leftRating)}) `;
+			output += `${colorType(leftResult)}\x1B[0m ${leftRating.toFixed(0)} ⇒ ${leftNewRating.toFixed(0)} (${colorDelta(leftNewRating - leftRating, paddingL)}) `;
 			output += ` ${leftIsAuthor ? "=" : "<"}=💀=${leftIsAuthor ? ">" : "="} `;
-			output += ` ${colorType(rightResult)}\x1B[0m ${rightRating.toFixed(0)} ⇒ ${rightNewRating.toFixed(0)} (${colorDelta(rightNewRating - rightRating)}) `;
+			output += ` ${colorType(rightResult)}\x1B[0m ${rightRating.toFixed(0)} ⇒ ${rightNewRating.toFixed(0)} (${colorDelta(rightNewRating - rightRating, paddingR)}) `;
 
 			try {
 				const { problemId } = JSON.parse(ext);
-				output += `  [boj.kr/${problemId}]\n`;
+				output += `  [${problemId}]\n`;
 			} catch {
 				output += "\n";
 			}
@@ -109,7 +110,7 @@ export default {
 			"```ansi\n\x1B[1m"
 			+ `${padCenter(leftUser.bojId, lineLength >> 1)}${padCenter(rightUser.bojId, lineLength >> 1)}\n`
 			+ `${padCenter(leftUser.rating, lineLength >> 1)}${padCenter(rightUser.rating, lineLength >> 1)}\n`
-			+ `${winCount}승 ${tieCount}무 ${loseCount}패\x1B[0m\n`
+			+ `        ${padCenter(`${winCount}승`, 8)}    ${padCenter(`${tieCount}무`, 8)}    ${padCenter(`${loseCount}패`, 8)}\x1B[0m\n`
 			+ `\x1B[32m${"-".repeat(lineLength)}\x1B[1m\n${output}`
 			+ "```",
 		);
