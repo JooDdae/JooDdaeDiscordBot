@@ -1,6 +1,6 @@
 const headers = { "Content-Type": "application/json" };
 
-const ID = /^[0-9a-z_]{3,20}$/;
+const ID = /^[0-9a-z_]{3,20}$/i;
 
 export type SolvedacOrganization = {
 	organizationId: number;

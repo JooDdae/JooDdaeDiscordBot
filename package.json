@@ -4,9 +4,12 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --sourcemap --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=dist/index.js",
+    "build": "run-p build:index build:replay",
+    "build:index": "esbuild src/index.ts --bundle --sourcemap --format=cjs --platform=node --external:discord.js --external:jsdom --target=es2021 --outfile=dist/index.js",
+    "build:replay": "esbuild scripts/replay.ts --bundle --sourcemap --format=cjs --platform=node --external:jsdom --target=es2021 --outfile=dist/replay.js",
     "start": "run-s build node",
     "node": "cross-env NODE_OPTIONS=--enable-source-maps node dist/index.js",
+    "node:replay": "cross-env NODE_OPTIONS=--enable-source-maps node dist/replay.js",
     "prisma": "run-s prisma:format prisma:migrate prisma:generate",
     "studio": "prisma studio",
     "prisma:format": "prisma format",
