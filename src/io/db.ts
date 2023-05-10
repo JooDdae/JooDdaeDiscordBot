@@ -1,3 +1,4 @@
+import { Player } from "glicko2.ts";
 import { PrismaClient, User } from "@prisma/client";
 
 export type { Match, RatingRecord, User, QueryPreset } from "@prisma/client";
@@ -55,7 +56,8 @@ export const addMakgora = (
 	result: -1 | 0 | 1,
 	startTime: number,
 	rated: boolean,
-	delta: number,
+	newUser: Player,
+	newTarget: Player,
 	timeout: number,
 	problemId: number,
 	query: string,
@@ -80,13 +82,13 @@ export const addMakgora = (
 						userId: user.id,
 						result,
 						prevRating: user.rating,
-						delta,
+						newRating: newUser.getRating(),
 					},
 					{
 						userId: target.id,
 						result: -result,
 						prevRating: target.rating,
-						delta: -delta,
+						newRating: newTarget.getRating(),
 					},
 				],
 			},
@@ -97,7 +99,9 @@ export const addMakgora = (
 	db.user.update({
 		where: { id: user.id },
 		data: {
-			rating: user.rating + delta,
+			rating: newUser.getRating(),
+			rd: newUser.getRd(),
+			vol: newUser.getVol(),
 			winCount: user.winCount + Number(result === 1),
 			tieCount: user.tieCount + Number(result === 0),
 			loseCount: user.loseCount + Number(result === -1),
@@ -107,7 +111,9 @@ export const addMakgora = (
 	db.user.update({
 		where: { id: target.id },
 		data: {
-			rating: target.rating - delta,
+			rating: newTarget.getRating(),
+			rd: newTarget.getRd(),
+			vol: newTarget.getVol(),
 			winCount: target.winCount + Number(result === -1),
 			tieCount: target.tieCount + Number(result === 0),
 			loseCount: target.loseCount + Number(result === 1),

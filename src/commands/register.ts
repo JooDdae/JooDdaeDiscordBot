@@ -83,7 +83,7 @@ export default {
 		}
 
 		// 등록
-		await addUser(id, bojId, 1000 + (user.ratingByProblemsSum >> 1));
+		await addUser(id, bojId, 1000 + user.ratingByProblemsSum / 2);
 		await tokenMessage.reply(registerSuccess(id, bojId));
 	},
 };

@@ -7,7 +7,7 @@ const noRatedRecord = () => (
 	`기록된 전적이 없어 랭킹을 출력할 수 없습니다.`
 );
 
-const pad = (x: number, n = 4) => x.toString().padStart(n);
+const pad = (x: number, n = 4) => x.toFixed(0).padStart(n);
 
 export default {
 	command: "랭킹",
@@ -24,7 +24,7 @@ export default {
 		for (const { rating, bojId, winCount, tieCount, loseCount } of ranking) {
 			if (rating !== prevRating) rank = index;
 			if (rating !== topRating) output += `\x1B[0m`;
-			output += `${rank} ${bojId.padEnd(15)} ${pad(rating)} ${pad(winCount)}승 ${pad(tieCount)}무 ${pad(loseCount)}패\n`;
+			output += `${pad(rank, 2)} ${bojId.padEnd(15)} ${pad(rating)} ${pad(winCount)}승 ${pad(tieCount)}무 ${pad(loseCount)}패\n`;
 			prevRating = rating;
 			index += 1;
 		}

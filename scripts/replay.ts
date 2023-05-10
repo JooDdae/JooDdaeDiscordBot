@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 import { PrismaClient, User } from "@prisma/client";
 
-import { eloDelta } from "../src/common/elo";
+import { battle } from "../src/common/rating";
 import { getSolvedacUser } from "../src/io/solvedac";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -23,9 +23,10 @@ export const replay = async() => {
 			}
 		}
 		if (solvedUser !== null) solvedRating = solvedUser.rating;
-		user.rating = 1000 + (solvedRating >> 1);
+		user.rating = 1000 + solvedRating / 2;
 		console.log(`${user.bojId}: ${user.rating}`);
 	}
+	console.log("Hi!");
 
 	for (const { authorId, rated, participants } of matches) {
 		let [authorRecord, targetRecord] = participants;
@@ -36,14 +37,14 @@ export const replay = async() => {
 		const target = users[targetId];
 		const result = authorRecord.result as (-1 | 0 | 1);
 		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
-		const delta = rated ? eloDelta(user.rating, target.rating, eloResult) : 0;
+		const [newUser, newTarget] = battle(user, target, eloResult, rated);
 		await db.$transaction([
 			db.ratingRecord.update(
 				{
 					where: { id: authorRecord.id },
 					data: {
 						prevRating: user.rating,
-						delta,
+						newRating: newUser.getRating(),
 					},
 				},
 			),
@@ -52,20 +53,28 @@ export const replay = async() => {
 					where: { id: targetRecord.id },
 					data: {
 						prevRating: target.rating,
-						delta: -delta,
+						newRating: newTarget.getRating(),
 					},
 				},
 			),
 		]);
-		user.rating += delta;
-		target.rating -= delta;
+		user.rating = newUser.getRating();
+		user.rd = newUser.getRd();
+		user.vol = newUser.getVol();
+		target.rating = newTarget.getRating();
+		target.rd = newTarget.getRd();
+		target.vol = newTarget.getVol();
 	}
 
 	await db.$transaction(
 		Object.values(users)
 			.map((user) => db.user.update({
 				where: { id: user.id },
-				data: { rating: user.rating },
+				data: {
+					rating: user.rating,
+					vol: user.vol,
+					rd: user.rd,
+				},
 			})),
 	);
 };

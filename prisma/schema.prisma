@@ -11,6 +11,8 @@ model User {
   id            String         @id
   bojId         String         @unique
   rating        Float
+  rd            Float          @default(350)
+  vol           Float          @default(0.06)
   winCount      Int            @default(0)
   tieCount      Int            @default(0)
   loseCount     Int            @default(0)
@@ -38,8 +40,8 @@ model RatingRecord {
   userId     String
   matchId    Int
   result     Int
-  prevRating Float
-  delta      Float
+  prevRating Float  @default(0)
+  newRating  Float  @default(0)
   match      Match  @relation(fields: [matchId], references: [id])
   user       User   @relation(fields: [userId], references: [id])
 }

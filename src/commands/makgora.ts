@@ -1,9 +1,10 @@
 import { Message } from "discord.js";
+import { Player } from "glicko2.ts";
 
 import { getAcceptedSubmission } from "../io/boj";
 import { getRandomProblems } from "../io/solvedac";
 import { DEFAULT_MAKGORA_TIMEOUT, REACTION_TIMEOUT } from "../constants";
-import { OnCleanup, assert, colorDelta, eloDelta, transformQuery } from "../common";
+import { OnCleanup, assert, battle, colorDelta, transformQuery } from "../common";
 import { User, addMakgora, getActive, getPresetQueryTable, getUser, getUserByBojId, setActive } from "../io/db";
 import { getCommands, messageFilter, reactionFilter, sendTimer } from "../io/discord";
 
@@ -48,25 +49,26 @@ const startMakgora = (userId: string, targetId: string, titleKo: string, problem
 
 const remainTime = (remain: number) => `무승부로 강제 종료까지 남은 시간: ${(remain / 1000 / 60).toFixed(0)}분`;
 
-const ratingChange = (bojId: string, rating: number, delta: number) => (
-	`${bojId}: ${(rating).toFixed(0)} ⇒ ${(rating + delta).toFixed(0)} (${colorDelta(delta)})\n`
+const ratingChange = (bojId: string, rating: number, newRating: number) => (
+	`${bojId}: ${(rating).toFixed(0)} ⇒ ${newRating.toFixed(0)} (${colorDelta(newRating - rating)})\n`
 );
 
 const resultMakgora = (
 	userId: string,
 	targetId: string,
 	result: -1 | 0 | 1,
-	delta: number,
 	user: User,
 	target: User,
+	newUser: Player,
+	newTarget: Player,
 ) => {
 	let output = "";
 	if (result === 0) output += "막고라가 무승부로 끝났습니다.";
 	else output += `<@${result === 1 ? userId : targetId}>의 승리! 축하합니다!`;
 	output += ` <@${userId}>와 <@${targetId}>의 레이팅 변화는 다음과 같습니다.\n`;
 	output += "```ansi\n";
-	output += ratingChange(user.bojId, user.rating, delta);
-	output += ratingChange(target.bojId, target.rating, -delta);
+	output += ratingChange(user.bojId, user.rating, newUser.getRating());
+	output += ratingChange(target.bojId, target.rating, newTarget.getRating());
 	output += "```";
 	return output;
 };
@@ -179,9 +181,9 @@ export default {
 
 		// 결과 반영
 		const eloResult = result === 1 ? 1 : result === -1 ? 0 : 0.5;
-		const delta = eloDelta(user.rating, target.rating, eloResult);
+		const [newUser, newTarget] = battle(user, target, eloResult, rated);
 
-		startingMessage.reply(resultMakgora(userId, targetId, result, delta, user, target));
-		await addMakgora(user, target, result, startTime, rated, delta, timeout, problemId, query);
+		startingMessage.reply(resultMakgora(userId, targetId, result, user, target, newUser, newTarget));
+		await addMakgora(user, target, result, startTime, rated, newUser, newTarget, timeout, problemId, query);
 	},
 };
