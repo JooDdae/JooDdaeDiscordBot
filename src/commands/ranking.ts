@@ -7,7 +7,7 @@ const noRatedRecord = () => (
 	`기록된 전적이 없어 랭킹을 출력할 수 없습니다.`
 );
 
-const pad = (x: number, n = 4) => x.toString().padStart(n);
+const pad = (x: number, n = 4) => x.toFixed(0).padStart(n);
 
 export default {
 	command: "랭킹",

@@ -81,21 +81,21 @@ export default {
 			const {
 				result: leftResult,
 				prevRating: leftRating,
-				delta: leftDelta,
+				newRating: leftNewRating,
 			} = participants.find(({ userId }) => userId === id)!;
 			const {
 				result: rightResult,
 				prevRating: rightRating,
-				delta: rightDelta,
+				newRating: rightNewRating,
 			} = participants.find(({ userId }) => userId === targetId)!;
 
 			winCount += Number(leftResult === 1);
 			loseCount += Number(rightResult === 1);
 			tieCount += Number(leftResult === 0);
 
-			output += `${colorType(leftResult)}\x1B[0m ${leftRating} ⇒ ${leftRating + leftDelta} (${colorDelta(leftDelta)}) `;
+			output += `${colorType(leftResult)}\x1B[0m ${leftRating.toFixed(0)} ⇒ ${leftNewRating.toFixed(0)} (${colorDelta(leftNewRating - leftRating)}) `;
 			output += ` ${leftIsAuthor ? "=" : "<"}=💀=${leftIsAuthor ? ">" : "="} `;
-			output += ` ${colorType(rightResult)}\x1B[0m ${rightRating} ⇒ ${rightRating + rightDelta} (${colorDelta(rightDelta)}) `;
+			output += ` ${colorType(rightResult)}\x1B[0m ${rightRating.toFixed(0)} ⇒ ${rightNewRating.toFixed(0)} (${colorDelta(rightNewRating - rightRating)}) `;
 
 			try {
 				const { problemId } = JSON.parse(ext);
