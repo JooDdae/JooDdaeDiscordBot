@@ -2,7 +2,7 @@
 import { Message } from "discord.js";
 
 import { assert, colorDelta, maxPadding, padCenter } from "../common";
-import { getMatches, getUser, getUserByBojId } from "../io/db";
+import { getMatches2, getUser, getUserByBojId } from "../io/db";
 
 const usage = "`!상대전적 <상대의 BOJ ID>` 혹은 `!상대전적 <BOJ ID1> <BOJ ID2>` 로 상대전적을 확인할 수 있습니다.\n";
 

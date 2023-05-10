@@ -21,7 +21,14 @@ export const getRanking = (skip = 0, take = 10) => db.user.findMany({
 	skip,
 	take,
 });
-export const getMatches = (id1: string, id2: string, skip = 0, take = 10) => db.match.findMany({
+export const getMatches = (id: string, skip = 0, take = 10) => db.match.findMany({
+	where: { participants: { some: { userId: id } } },
+	include: { participants: { include: { user: { select: { bojId: true } } } } },
+	orderBy: { id: "desc" },
+	skip,
+	take,
+});
+export const getMatches2 = (id1: string, id2: string, skip = 0, take = 10) => db.match.findMany({
 	where: {
 		AND: [
 			{ participants: { some: { userId: id1 } } },
