@@ -16,7 +16,10 @@ export const getUserBojIds = (count = 50) => db.user.findMany({
 	take: count,
 });
 export const getRanking = (skip = 0, take = 10) => db.user.findMany({
-	where: { rated: true },
+	where: {
+		rated: true,
+		rd: { lte: 100 },
+	},
 	orderBy: { rating: "desc" },
 	skip,
 	take,
