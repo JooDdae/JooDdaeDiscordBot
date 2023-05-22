@@ -8,7 +8,7 @@ const usage = "`!랭킹 [p=1] 로 랭킹을 볼 수 있습니다.\n"
 		+ "예시: `!랭킹`, `!랭킹 2`\n";
 
 const noRatedRecord = () => (
-	`기록된 전적이 없어 랭킹을 출력할 수 없습니다.`
+	`해당 페이지가 존재하지 않습니다.`
 );
 
 const pad = (x: number, n = 4) => x.toFixed(0).padStart(n);
@@ -20,7 +20,7 @@ export default {
 		const args = content.split(" ").slice(1);
 		assert(args.length <= 1, usage);
 
-		const page = args.length === 1 ? Math.max(Number(args[0]) | 0, 1) : 1;
+		const page = args.length === 1 ? Math.max(Number(args[0]) | 0, 0) : 0;
 
 		const ranking = await getRanking(page * 10);
 		assert(ranking.length > 0, noRatedRecord);
